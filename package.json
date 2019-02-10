@@ -38,7 +38,8 @@
     "ts-node": "^7.0.1",
     "tslint": "^5.12.1",
     "tslint-no-unused-expression-chai": "^0.1.4",
-    "typescript": "^3.2.4"
+    "typescript": "^3.2.4",
+    "@daign/mock-dom": "^1.0.0"
   },
   "dependencies": {
     "@daign/math": "^1.0.1",

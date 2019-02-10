@@ -2,45 +2,17 @@ import {expect} from 'chai';
 import * as sinon from 'sinon';
 
 import {Vector2} from '@daign/math';
+import {MockDocument} from '@daign/mock-dom';
+import {MockEvent} from '@daign/mock-dom';
+import {MockNode} from '@daign/mock-dom';
 
 import {Handle} from '../lib/handle';
 
 declare var global: any;
 
-class MockEvent {
-  public clientX: number;
-  public clientY: number;
-
-  constructor( x: number, y: number ) {
-    this.clientX = x;
-    this.clientY = y;
-  }
-
-  public preventDefault(): void {}
-  public stopPropagation(): void {}
-}
-
-class MockNode {
-  private eventListeners: { [ eventName: string ]: ( event: any ) => void; };
-
-  constructor() {
-    this.eventListeners = {};
-  }
-
-  public addEventListener( eventName: string, callback: ( event: any ) => void ): void {
-    this.eventListeners[ eventName ] = callback;
-  }
-
-  public sendEvent( eventName: string, event: MockEvent ): void {
-    this.eventListeners[ eventName ]( event );
-  }
-
-  public removeEventListener(): void {}
-}
-
 describe( 'Handle', () => {
   beforeEach( () => {
-    global.document = new MockNode();
+    global.document = new MockDocument();
   });
 
   describe( 'constructor', () => {
@@ -65,7 +37,7 @@ describe( 'Handle', () => {
       const handle = new Handle( node );
       const spy = sinon.spy( handle, 'beginning' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -80,7 +52,7 @@ describe( 'Handle', () => {
       const handle = new Handle( node );
       const spy = sinon.spy( handle, 'beginning' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'touchstart', event );
@@ -93,7 +65,7 @@ describe( 'Handle', () => {
       // arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      const event = new MockEvent( 1, 2 );
+      const event = new MockEvent().setClientPoint( 1, 2 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -111,7 +83,7 @@ describe( 'Handle', () => {
       };
       const spy = sinon.spy( global.document, 'addEventListener' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -129,7 +101,7 @@ describe( 'Handle', () => {
       };
       const spy = sinon.spy( global.document, 'addEventListener' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -151,7 +123,7 @@ describe( 'Handle', () => {
       };
       const spy = sinon.spy( handle, 'continuing' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -169,9 +141,9 @@ describe( 'Handle', () => {
       handle.beginning = () => {
         return true;
       };
-      const startEvent = new MockEvent( 1, 2 );
-      const dragEvent = new MockEvent( 3, 5 );
-      const endEvent = new MockEvent( 0, 0 );
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 3, 5 );
+      const endEvent = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', startEvent );
@@ -189,9 +161,9 @@ describe( 'Handle', () => {
       handle.beginning = () => {
         return true;
       };
-      const startEvent = new MockEvent( 1, 2 );
-      const dragEvent = new MockEvent( 3, 5 );
-      const endEvent = new MockEvent( 0, 0 );
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 3, 5 );
+      const endEvent = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', startEvent );
@@ -213,7 +185,7 @@ describe( 'Handle', () => {
       };
       const spy = sinon.spy( handle, 'ending' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -233,7 +205,7 @@ describe( 'Handle', () => {
       };
       const spy = sinon.spy( handle, 'clicked' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -250,9 +222,9 @@ describe( 'Handle', () => {
       handle.beginning = () => {
         return true;
       };
-      const startEvent = new MockEvent( 1, 2 );
-      const dragEvent = new MockEvent( 0, 0 );
-      const endEvent = new MockEvent( 3, 5 );
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 0, 0 );
+      const endEvent = new MockEvent().setClientPoint( 3, 5 );
 
       // act
       node.sendEvent( 'mousedown', startEvent );
@@ -270,9 +242,9 @@ describe( 'Handle', () => {
       handle.beginning = () => {
         return true;
       };
-      const startEvent = new MockEvent( 1, 2 );
-      const dragEvent = new MockEvent( 0, 0 );
-      const endEvent = new MockEvent( 3, 5 );
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 0, 0 );
+      const endEvent = new MockEvent().setClientPoint( 3, 5 );
 
       // act
       node.sendEvent( 'mousedown', startEvent );
@@ -292,7 +264,7 @@ describe( 'Handle', () => {
       };
       const spy = sinon.spy( global.document, 'removeEventListener' );
 
-      const event = new MockEvent( 0, 0 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
 
       // act
       node.sendEvent( 'mousedown', event );
@@ -313,8 +285,8 @@ describe( 'Handle', () => {
         return true;
       };
 
-      const event = new MockEvent( 0, 0 );
-      const selectEvent = new MockEvent( 1, 1 );
+      const event = new MockEvent().setClientPoint( 0, 0 );
+      const selectEvent = new MockEvent().setClientPoint( 1, 1 );
       const spy = sinon.spy( selectEvent, 'preventDefault' );
 
       // act
