@@ -1,30 +1,28 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import * as sinon from 'sinon';
 
-import {Vector2} from '@daign/math';
-import {MockDocument} from '@daign/mock-dom';
-import {MockEvent} from '@daign/mock-dom';
-import {MockNode} from '@daign/mock-dom';
+import { Vector2 } from '@daign/math';
+import { MockDocument, MockEvent, MockNode } from '@daign/mock-dom';
 
-import {Handle} from '../lib/handle';
+import { Handle } from '../lib/handle';
 
 declare var global: any;
 
 describe( 'Handle', () => {
   beforeEach( () => {
     global.document = new MockDocument();
-  });
+  } );
 
   describe( 'constructor', () => {
     it( 'should register two event listeners on passed node', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const spy = sinon.spy( node, 'addEventListener' );
 
-      // act
+      // Act
       const handle = new Handle( node );
 
-      // assert
+      // Assert
       expect( ( handle as any ).node ).to.equal( node );
       expect( spy.callCount ).to.equal( 2 );
     } );
@@ -32,81 +30,81 @@ describe( 'Handle', () => {
 
   describe( 'beginDrag', () => {
     it( 'should call the beginning function on mousedown event', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
       const spy = sinon.spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
 
-      // assert
+      // Assert
       expect( spy.calledOnce ).to.be.true;
     } );
 
     it( 'should call the beginning function on touchstart event', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
       const spy = sinon.spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'touchstart', event );
 
-      // assert
+      // Assert
       expect( spy.calledOnce ).to.be.true;
     } );
 
     it( 'should set the start vector', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
       const event = new MockEvent().setClientPoint( 1, 2 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
 
-      // assert
+      // Assert
       expect( handle.start.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
     it( 'should not register more events if beginning function returns false', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return false;
       };
       const spy = sinon.spy( global.document, 'addEventListener' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
 
-      // assert
+      // Assert
       expect( spy.notCalled ).to.be.true;
     } );
 
     it( 'should register 7 more events if beginning function returns true', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const spy = sinon.spy( global.document, 'addEventListener' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
 
-      // assert
+      // Assert
       expect( spy.callCount ).to.equal( 7 );
       global.document.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
@@ -115,61 +113,61 @@ describe( 'Handle', () => {
 
   describe( 'continueDrag', () => {
     it( 'should call the continuing function on mousemove event', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const spy = sinon.spy( handle, 'continuing' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
       global.document.sendEvent( 'mousemove', event );
 
-      // assert
+      // Assert
       expect( spy.calledOnce ).to.be.true;
       global.document.sendEvent( 'mouseup', event );
     } );
 
     it( 'should set the temp vector', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const startEvent = new MockEvent().setClientPoint( 1, 2 );
       const dragEvent = new MockEvent().setClientPoint( 3, 5 );
       const endEvent = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', startEvent );
       global.document.sendEvent( 'mousemove', dragEvent );
 
-      // assert
+      // Assert
       expect( handle.temp.equals( new Vector2( 3, 5 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', endEvent );
     } );
 
     it( 'should set the delta vector', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const startEvent = new MockEvent().setClientPoint( 1, 2 );
       const dragEvent = new MockEvent().setClientPoint( 3, 5 );
       const endEvent = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', startEvent );
       global.document.sendEvent( 'mousemove', dragEvent );
 
-      // assert
+      // Assert
       expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', endEvent );
     } );
@@ -177,111 +175,111 @@ describe( 'Handle', () => {
 
   describe( 'endDrag', () => {
     it( 'should call the ending function if there was a mousemove event', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const spy = sinon.spy( handle, 'ending' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
       global.document.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
 
-      // assert
+      // Assert
       expect( spy.calledOnce ).to.be.true;
     } );
 
     it( 'should call the clicked function if there was no mousemove event', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const spy = sinon.spy( handle, 'clicked' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
       global.document.sendEvent( 'mouseup', event );
 
-      // assert
+      // Assert
       expect( spy.calledOnce ).to.be.true;
     } );
 
     it( 'should set the temp vector', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const startEvent = new MockEvent().setClientPoint( 1, 2 );
       const dragEvent = new MockEvent().setClientPoint( 0, 0 );
       const endEvent = new MockEvent().setClientPoint( 3, 5 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', startEvent );
       global.document.sendEvent( 'mousemove', dragEvent );
       global.document.sendEvent( 'mouseup', endEvent );
 
-      // assert
+      // Assert
       expect( handle.temp.equals( new Vector2( 3, 5 ) ) ).to.be.true;
     } );
 
     it( 'should set the delta vector', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const startEvent = new MockEvent().setClientPoint( 1, 2 );
       const dragEvent = new MockEvent().setClientPoint( 0, 0 );
       const endEvent = new MockEvent().setClientPoint( 3, 5 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', startEvent );
       global.document.sendEvent( 'mousemove', dragEvent );
       global.document.sendEvent( 'mouseup', endEvent );
 
-      // assert
+      // Assert
       expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
     } );
 
     it( 'should remove 7 events', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
       const spy = sinon.spy( global.document, 'removeEventListener' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
       global.document.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
 
-      // assert
+      // Assert
       expect( spy.callCount ).to.equal( 7 );
     } );
   } );
 
   describe( 'cancelSelect', () => {
     it( 'should call preventDefault on the selectEvent', () => {
-      // arrange
+      // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
-      handle.beginning = () => {
+      handle.beginning = (): boolean => {
         return true;
       };
 
@@ -289,12 +287,12 @@ describe( 'Handle', () => {
       const selectEvent = new MockEvent().setClientPoint( 1, 1 );
       const spy = sinon.spy( selectEvent, 'preventDefault' );
 
-      // act
+      // Act
       node.sendEvent( 'mousedown', event );
       global.document.sendEvent( 'selectstart', selectEvent );
       global.document.sendEvent( 'mouseup', event );
 
-      // assert
+      // Assert
       expect( spy.calledOnce ).to.be.true;
     } );
   } );

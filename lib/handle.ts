@@ -1,5 +1,5 @@
-import {Vector2} from '@daign/math';
-import {Schedule} from '@daign/schedule';
+import { Vector2 } from '@daign/math';
+import { Schedule } from '@daign/schedule';
 
 /**
  * Class to handle drag actions on DOM elements.
@@ -42,7 +42,7 @@ export class Handle {
    * Constructor
    * @param node The DOM node that should trigger the start event
    */
-  constructor( node: any ) {
+  public constructor( node: any ) {
     this.node = node;
 
     this.node.addEventListener( 'mousedown', ( event: any ): void => {
