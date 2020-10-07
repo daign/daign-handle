@@ -8,13 +8,13 @@ import { Handle } from '../lib/handle';
 
 declare var global: any;
 
-describe( 'Handle', () => {
-  beforeEach( () => {
+describe( 'Handle', (): void => {
+  beforeEach( (): void => {
     global.document = new MockDocument();
   } );
 
-  describe( 'constructor', () => {
-    it( 'should register two event listeners on passed node', () => {
+  describe( 'constructor', (): void => {
+    it( 'should register two event listeners on passed node', (): void => {
       // Arrange
       const node = new MockNode();
       const spy = sinon.spy( node, 'addEventListener' );
@@ -28,8 +28,8 @@ describe( 'Handle', () => {
     } );
   } );
 
-  describe( 'beginDrag', () => {
-    it( 'should call the beginning function on mousedown event', () => {
+  describe( 'beginDrag', (): void => {
+    it( 'should call the beginning function on mousedown event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -44,7 +44,7 @@ describe( 'Handle', () => {
       expect( spy.calledOnce ).to.be.true;
     } );
 
-    it( 'should call the beginning function on touchstart event', () => {
+    it( 'should call the beginning function on touchstart event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -59,7 +59,7 @@ describe( 'Handle', () => {
       expect( spy.calledOnce ).to.be.true;
     } );
 
-    it( 'should set the start vector', () => {
+    it( 'should set the start vector', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -72,7 +72,7 @@ describe( 'Handle', () => {
       expect( handle.start.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
-    it( 'should not register more events if beginning function returns false', () => {
+    it( 'should not register more events if beginning function returns false', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -90,7 +90,7 @@ describe( 'Handle', () => {
       expect( spy.notCalled ).to.be.true;
     } );
 
-    it( 'should register 7 more events if beginning function returns true', () => {
+    it( 'should register 7 more events if beginning function returns true', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -111,8 +111,8 @@ describe( 'Handle', () => {
     } );
   } );
 
-  describe( 'continueDrag', () => {
-    it( 'should call the continuing function on mousemove event', () => {
+  describe( 'continueDrag', (): void => {
+    it( 'should call the continuing function on mousemove event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -132,7 +132,7 @@ describe( 'Handle', () => {
       global.document.sendEvent( 'mouseup', event );
     } );
 
-    it( 'should set the temp vector', () => {
+    it( 'should set the temp vector', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -152,7 +152,7 @@ describe( 'Handle', () => {
       global.document.sendEvent( 'mouseup', endEvent );
     } );
 
-    it( 'should set the delta vector', () => {
+    it( 'should set the delta vector', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -173,8 +173,8 @@ describe( 'Handle', () => {
     } );
   } );
 
-  describe( 'endDrag', () => {
-    it( 'should call the ending function if there was a mousemove event', () => {
+  describe( 'endDrag', (): void => {
+    it( 'should call the ending function if there was a mousemove event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -194,7 +194,7 @@ describe( 'Handle', () => {
       expect( spy.calledOnce ).to.be.true;
     } );
 
-    it( 'should call the clicked function if there was no mousemove event', () => {
+    it( 'should call the clicked function if there was no mousemove event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -213,7 +213,7 @@ describe( 'Handle', () => {
       expect( spy.calledOnce ).to.be.true;
     } );
 
-    it( 'should set the temp vector', () => {
+    it( 'should set the temp vector', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -233,7 +233,7 @@ describe( 'Handle', () => {
       expect( handle.temp.equals( new Vector2( 3, 5 ) ) ).to.be.true;
     } );
 
-    it( 'should set the delta vector', () => {
+    it( 'should set the delta vector', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -253,7 +253,7 @@ describe( 'Handle', () => {
       expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
     } );
 
-    it( 'should remove 7 events', () => {
+    it( 'should remove 7 events', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
@@ -274,8 +274,8 @@ describe( 'Handle', () => {
     } );
   } );
 
-  describe( 'cancelSelect', () => {
-    it( 'should call preventDefault on the selectEvent', () => {
+  describe( 'cancelSelect', (): void => {
+    it( 'should call preventDefault on the selectEvent', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( node );
