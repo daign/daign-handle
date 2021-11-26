@@ -5,37 +5,40 @@ import { Schedule } from '@daign/schedule';
  * Class to handle drag actions on DOM elements.
  */
 export class Handle {
-  // The DOM node that triggers the start event
+  // The DOM node that triggers the start event.
   private node: any;
 
   // The function that is used to extract coordinates from mouse events.
   private extractFromEvent: ( event: any ) => Vector2;
 
-  // Start position of the drag
+  // Start position of the drag.
   private _start: Vector2 = new Vector2();
 
-  // Current position of the drag
+  // Current position of the drag.
   private _temp: Vector2 = new Vector2();
 
-  // Current difference to start position
+  // Current difference to start position.
   private _delta: Vector2 = new Vector2();
 
+  // Variable to temporarily disable the handle.
+  public enabled: boolean = true;
+
   /**
-   * Get the start position of the drag
+   * Get the start position of the drag.
    */
   public get start(): Vector2 {
     return this._start;
   }
 
   /**
-   * Get the current position of the drag
+   * Get the current position of the drag.
    */
   public get temp(): Vector2 {
     return this._temp;
   }
 
   /**
-   * Get the current difference to start position
+   * Get the current difference to start position.
    */
   public get delta(): Vector2 {
     return this._delta;
@@ -59,12 +62,19 @@ export class Handle {
       };
     }
 
-    this.node.addEventListener( 'mousedown', ( event: any ): void => {
-      this.beginDrag( event );
-    }, false );
-    this.node.addEventListener( 'touchstart', ( event: any ): void => {
-      this.beginDrag( event );
-    }, false );
+    this.node.addEventListener( 'mousedown', this.beginDrag, false );
+    this.node.addEventListener( 'touchstart', this.beginDrag, false );
+  }
+
+  /**
+   * Remove event listeners from node and remove reference to node.
+   */
+  public destroy(): void {
+    if ( this.node ) {
+      this.node.removeEventListener( 'mousedown', this.beginDrag, false );
+      this.node.removeEventListener( 'touchstart', this.beginDrag, false );
+      this.node = null;
+    }
   }
 
   /**
@@ -75,25 +85,31 @@ export class Handle {
   };
 
   /**
-   * Callback to execute during the drag
+   * Callback to execute during the drag.
    */
   public continuing: () => void = () => {};
 
   /**
-   * Callback to execute when the drag has ended
+   * Callback to execute when the drag has ended.
    */
   public ending: () => void = () => {};
 
   /**
-   * Callback to execute when mouse was released without a position change
+   * Callback to execute when mouse was released without a position change.
    */
   public clicked: () => void = () => {};
 
   /**
-   * Begin executing the drag
-   * @param startEvent The start event for the drag
+   * Function that begins executing the drag.
+   * This is a function assigned to an object property, not an object method, because when object
+   * methods are called from event listeners their this-context is not set to the object.
    */
-  private beginDrag( startEvent: any ): void {
+  private beginDrag: ( event: any ) => void = ( startEvent: any ): void => {
+    // Cancel action when the handle is disabled.
+    if ( !this.enabled ) {
+      return;
+    }
+
     startEvent.preventDefault();
     startEvent.stopPropagation();
 
@@ -155,5 +171,5 @@ export class Handle {
       document.addEventListener( 'touchcancel', endDrag, false );
       document.addEventListener( 'touchleave', endDrag, false );
     }
-  }
+  };
 }

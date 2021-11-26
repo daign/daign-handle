@@ -42,7 +42,7 @@
     "@daign/mock-dom": "1.0.5"
   },
   "dependencies": {
-    "@daign/math": "^1.0.7",
+    "@daign/math": "^1.0.13",
     "@daign/schedule": "^1.0.2"
   },
   "nyc": {

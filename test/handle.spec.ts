@@ -28,6 +28,37 @@ describe( 'Handle', (): void => {
     } );
   } );
 
+  describe( 'destroy', (): void => {
+    it( 'should remove the event listeners from the node', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const spy = sinon.spy( node, 'removeEventListener' );
+      const handle = new Handle( node );
+
+      // Act
+      handle.destroy();
+
+      // Assert
+      expect( ( handle as any ).node ).to.be.null;
+      expect( spy.callCount ).to.equal( 2 );
+    } );
+
+    it( 'should not fail when called twice on the same handle', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const spy = sinon.spy( node, 'removeEventListener' );
+      const handle = new Handle( node );
+
+      // Act
+      handle.destroy();
+      handle.destroy();
+
+      // Assert
+      expect( ( handle as any ).node ).to.be.null;
+      expect( spy.callCount ).to.equal( 2 );
+    } );
+  } );
+
   describe( 'beginDrag', (): void => {
     it( 'should call the beginning function on mousedown event', (): void => {
       // Arrange
@@ -57,6 +88,22 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( spy.calledOnce ).to.be.true;
+    } );
+
+    it( 'should not call the beginning function when the handle is disabled', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( node );
+      handle.enabled = false;
+      const spy = sinon.spy( handle, 'beginning' );
+
+      const event = new MockEvent().setClientPoint( 0, 0 );
+
+      // Act
+      node.sendEvent( 'mousedown', event );
+
+      // Assert
+      expect( spy.calledOnce ).to.be.false;
     } );
 
     it( 'should set the start vector', (): void => {
