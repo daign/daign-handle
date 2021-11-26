@@ -8,6 +8,9 @@ export class Handle {
   // The DOM node that triggers the start event
   private node: any;
 
+  // The function that is used to extract coordinates from mouse events.
+  private extractFromEvent: ( event: any ) => Vector2;
+
   // Start position of the drag
   private _start: Vector2 = new Vector2();
 
@@ -39,11 +42,22 @@ export class Handle {
   }
 
   /**
-   * Constructor
-   * @param node The DOM node that should trigger the start event
+   * Constructor.
+   * @param node - The DOM node that should trigger the start event.
+   * @param extractFromEvent - The function to extract coordinates from mouse events. Optional.
    */
-  public constructor( node: any ) {
+  public constructor( node: any, extractFromEvent?: ( event: any ) => Vector2 ) {
     this.node = node;
+
+    if ( extractFromEvent ) {
+      // Use a custom supplied extract function.
+      this.extractFromEvent = extractFromEvent;
+    } else {
+      // Use the default extract function.
+      this.extractFromEvent = ( event: any ): Vector2 => {
+        return new Vector2().setFromEvent( event );
+      };
+    }
 
     this.node.addEventListener( 'mousedown', ( event: any ): void => {
       this.beginDrag( event );
@@ -58,7 +72,7 @@ export class Handle {
    */
   public beginning: ( event: any ) => boolean = () => {
     return false;
-  }
+  };
 
   /**
    * Callback to execute during the drag
@@ -85,7 +99,7 @@ export class Handle {
 
     let dragged = false;
 
-    this._start.setFromEvent( startEvent );
+    this._start.copy( this.extractFromEvent( startEvent ) );
 
     if ( this.beginning( startEvent ) ) {
 
@@ -100,7 +114,7 @@ export class Handle {
 
         dragged = true;
 
-        this._temp.setFromEvent( moveEvent );
+        this._temp.copy( this.extractFromEvent( moveEvent ) );
         this._delta.copy( this._temp ).sub( this._start );
         this.continuing();
       };
@@ -111,7 +125,7 @@ export class Handle {
         endEvent.preventDefault();
         endEvent.stopPropagation();
 
-        this._temp.setFromEvent( endEvent );
+        this._temp.copy( this.extractFromEvent( endEvent ) );
         this._delta.copy( this._temp ).sub( this._start );
 
         if ( dragged ) {

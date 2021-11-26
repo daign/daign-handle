@@ -72,6 +72,22 @@ describe( 'Handle', (): void => {
       expect( handle.start.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
+    it( 'should set the start vector to the result of the custom extract function', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const extractFromEvent = (): Vector2 => {
+        return new Vector2( 2, 3 );
+      };
+      const handle = new Handle( node, extractFromEvent );
+      const event = new MockEvent().setClientPoint( 1, 2 );
+
+      // Act
+      node.sendEvent( 'mousedown', event );
+
+      // Assert
+      expect( handle.start.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+    } );
+
     it( 'should not register more events if beginning function returns false', (): void => {
       // Arrange
       const node = new MockNode();
