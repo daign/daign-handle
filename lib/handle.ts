@@ -8,11 +8,14 @@ export class Handle {
   // The DOM node that triggers the start event.
   private node: any;
 
+  // Distance in pixels below which a drag is still considered a click.
+  private minimumDragDistance: number = 5;
+
   // The function that is used to extract coordinates from mouse events.
   private extractFromEvent: ( event: any ) => Vector2;
 
-  // Distance in pixels below which a drag is still considered a click.
-  private minimumDragDistance: number = 5;
+  // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
+  private throttleInterval: number = 40;
 
   // Start position of the drag.
   private _start: Vector2 = new Vector2();
@@ -52,9 +55,13 @@ export class Handle {
    * @param node - The DOM node that should trigger the start event.
    * @param minimumDragDistance - Distance in px below which a drag is considered a click. Optional.
    * @param extractFromEvent - The function to extract coordinates from mouse events. Optional.
+   * @param throttleInterval - Waiting time in milliseconds between throttled move events. Optional.
    */
   public constructor(
-    node: any, minimumDragDistance?: number, extractFromEvent?: ( event: any ) => Vector2
+    node: any,
+    minimumDragDistance?: number,
+    extractFromEvent?: ( event: any ) => Vector2,
+    throttleInterval?: number
   ) {
     this.node = node;
 
@@ -70,6 +77,10 @@ export class Handle {
       this.extractFromEvent = ( event: any ): Vector2 => {
         return new Vector2().setFromEvent( event );
       };
+    }
+
+    if ( throttleInterval !== undefined ) {
+      this.throttleInterval = throttleInterval;
     }
 
     this.node.addEventListener( 'mousedown', this.beginDrag, false );
@@ -155,7 +166,8 @@ export class Handle {
         this.continuing();
       };
 
-      const throttledContinue = Schedule.deferringThrottle( continueDrag, 40, this );
+      const throttledContinue = Schedule.deferringThrottle( continueDrag, this.throttleInterval,
+        this );
 
       const endDrag = ( endEvent: any ): void => {
         endEvent.preventDefault();

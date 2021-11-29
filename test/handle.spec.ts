@@ -231,7 +231,7 @@ describe( 'Handle', (): void => {
       async (): Promise<void> => {
         // Arrange
         const node = new MockNode();
-        const handle = new Handle( node, 5 );
+        const handle = new Handle( node, 5, undefined, 1 );
         handle.beginning = (): boolean => {
           return true;
         };
@@ -246,13 +246,51 @@ describe( 'Handle', (): void => {
         global.document.sendEvent( 'mousemove', dragEvent1 );
         global.document.sendEvent( 'mousemove', dragEvent2 );
 
-        /* Wait 50 milliseconds after sending second move event, because the execution of the drag
-         * function is throttled by 40 milliseconds intervals. */
-        await sleep( 50 );
+        /* Wait 2 milliseconds after sending second move event, because the execution of the drag
+         * function is throttled by 1 milliseconds intervals. */
+        await sleep( 2 );
 
         // Assert
         expect( spy.callCount ).to.equal( 2 );
         global.document.sendEvent( 'mouseup', dragEvent2 );
+      }
+    );
+
+    it( 'should skip event execution according to throttle interval',
+      async (): Promise<void> => {
+        // Arrange
+        const node = new MockNode();
+        const handle = new Handle( node, 5, undefined, 10 );
+        handle.beginning = (): boolean => {
+          return true;
+        };
+        const spy = sinon.spy( handle, 'continuing' );
+
+        const startEvent = new MockEvent().setClientPoint( 0, 0 );
+        const dragEvent1 = new MockEvent().setClientPoint( 1, 10 );
+        const dragEvent2 = new MockEvent().setClientPoint( 2, 20 );
+        const dragEvent3 = new MockEvent().setClientPoint( 3, 30 );
+        const dragEvent4 = new MockEvent().setClientPoint( 4, 40 );
+        const dragEvent5 = new MockEvent().setClientPoint( 5, 50 );
+
+        // Act
+        node.sendEvent( 'mousedown', startEvent );
+        global.document.sendEvent( 'mousemove', dragEvent1 ); // Executed.
+        await sleep( 4 );
+        global.document.sendEvent( 'mousemove', dragEvent2 ); // Deferred.
+        await sleep( 4 );
+        global.document.sendEvent( 'mousemove', dragEvent3 ); // Canceled.
+        await sleep( 4 );
+        global.document.sendEvent( 'mousemove', dragEvent4 ); // Deferred.
+        await sleep( 4 );
+        global.document.sendEvent( 'mousemove', dragEvent5 ); // Canceled.
+
+        // Wait until throttling function is finished.
+        await sleep( 11 );
+
+        // Assert
+        expect( spy.callCount ).to.equal( 3 );
+        global.document.sendEvent( 'mouseup', dragEvent5 );
       }
     );
 
