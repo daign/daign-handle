@@ -6,13 +6,13 @@ import { Schedule } from '@daign/schedule';
  */
 export class Handle {
   // The DOM node that triggers the start event.
-  private node: any;
+  protected node: any;
 
   // Distance in pixels below which a drag is still considered a click.
   private minimumDragDistance: number = 5;
 
   // The function that is used to extract coordinates from mouse events.
-  private extractFromEvent: ( event: any ) => Vector2;
+  protected extractFromEvent: ( event: any ) => Vector2;
 
   // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
   private throttleInterval: number = 40;
