@@ -11,6 +11,9 @@ export class Handle {
   // The function that is used to extract coordinates from mouse events.
   private extractFromEvent: ( event: any ) => Vector2;
 
+  // Distance in pixels below which a drag is still considered a click.
+  private minimumDragDistance: number = 5;
+
   // Start position of the drag.
   private _start: Vector2 = new Vector2();
 
@@ -47,10 +50,17 @@ export class Handle {
   /**
    * Constructor.
    * @param node - The DOM node that should trigger the start event.
+   * @param minimumDragDistance - Distance in px below which a drag is considered a click. Optional.
    * @param extractFromEvent - The function to extract coordinates from mouse events. Optional.
    */
-  public constructor( node: any, extractFromEvent?: ( event: any ) => Vector2 ) {
+  public constructor(
+    node: any, minimumDragDistance?: number, extractFromEvent?: ( event: any ) => Vector2
+  ) {
     this.node = node;
+
+    if ( minimumDragDistance !== undefined ) {
+      this.minimumDragDistance = minimumDragDistance;
+    }
 
     if ( extractFromEvent ) {
       // Use a custom supplied extract function.
@@ -117,6 +127,7 @@ export class Handle {
 
     this._start.copy( this.extractFromEvent( startEvent ) );
 
+    // When the beginning function returns false then the drag or click is not continued.
     if ( this.beginning( startEvent ) ) {
 
       const cancelSelect = ( selectEvent: any ): void => {
@@ -128,10 +139,19 @@ export class Handle {
         moveEvent.preventDefault();
         moveEvent.stopPropagation();
 
-        dragged = true;
-
         this._temp.copy( this.extractFromEvent( moveEvent ) );
         this._delta.copy( this._temp ).sub( this._start );
+
+        if ( !dragged ) {
+          /* The action is only recognized as a drag after a minimum distance to the start event has
+           * been reached. Otherwise the continuing callback is not executed. */
+          if ( this._delta.length() >= this.minimumDragDistance ) {
+            dragged = true;
+          } else {
+            return;
+          }
+        }
+
         this.continuing();
       };
 
