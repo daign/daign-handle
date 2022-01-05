@@ -14,7 +14,7 @@ describe( 'ScrollHandle', (): void => {
       const spy = sinon.spy( node, 'addEventListener' );
 
       // Act
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
 
       // Assert
       expect( ( handle as any ).node ).to.equal( node );
@@ -27,7 +27,7 @@ describe( 'ScrollHandle', (): void => {
       // Arrange
       const node = new MockNode();
       const spy = sinon.spy( node, 'removeEventListener' );
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
 
       // Act
       handle.destroy();
@@ -41,7 +41,7 @@ describe( 'ScrollHandle', (): void => {
       // Arrange
       const node = new MockNode();
       const spy = sinon.spy( node, 'removeEventListener' );
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
 
       // Act
       handle.destroy();
@@ -57,7 +57,7 @@ describe( 'ScrollHandle', (): void => {
     it( 'should call the scrolling function on wheel event', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
       const spy = sinon.spy( handle, 'scrolling' );
 
       const event = new MockEvent().setScrollDelta( 1, 2 ).setClientPoint( 3, 4 );
@@ -72,7 +72,7 @@ describe( 'ScrollHandle', (): void => {
     it( 'should not call the scrolling function when the handle is disabled', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
       handle.enabled = false;
       const spy = sinon.spy( handle, 'scrolling' );
 
@@ -88,7 +88,7 @@ describe( 'ScrollHandle', (): void => {
     it( 'should set the scroll and scrollPosition vectors', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
       const event = new MockEvent().setScrollDelta( 1, 2 ).setClientPoint( 3, 4 );
 
       // Act
@@ -105,7 +105,7 @@ describe( 'ScrollHandle', (): void => {
       const extractFromEvent = (): Vector2 => {
         return new Vector2( 5, 6 );
       };
-      const handle = new ScrollHandle( node, undefined, extractFromEvent );
+      const handle = new ScrollHandle( { startNode: node, extractFromEvent } );
       const event = new MockEvent().setScrollDelta( 1, 2 ).setClientPoint( 3, 4 );
 
       // Act
@@ -118,7 +118,7 @@ describe( 'ScrollHandle', (): void => {
     it( 'should set the scroll mode value', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ScrollHandle( node );
+      const handle = new ScrollHandle( { startNode: node } );
       const event = new MockEvent().setScrollDelta( 1, 2, 5 );
 
       // Act

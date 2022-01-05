@@ -1,12 +1,17 @@
 import { Vector2 } from '@daign/math';
 import { Schedule } from '@daign/schedule';
 
+import { HandleConfig } from './handleConfig';
+
 /**
  * Class to handle drag actions on DOM elements.
  */
 export class Handle {
-  // The DOM node that triggers the start event.
+  // The DOM node on which the start event listeners are registered.
   protected node: any;
+
+  // The DOM node on which the move event listeners are registered.
+  private moveNode: any = document;
 
   // Distance in pixels below which a drag is still considered a click.
   private minimumDragDistance: number = 5;
@@ -52,26 +57,22 @@ export class Handle {
 
   /**
    * Constructor.
-   * @param node - The DOM node that should trigger the start event.
-   * @param minimumDragDistance - Distance in px below which a drag is considered a click. Optional.
-   * @param extractFromEvent - The function to extract coordinates from mouse events. Optional.
-   * @param throttleInterval - Waiting time in milliseconds between throttled move events. Optional.
+   * @param config - The handle config for setting up the handle.
    */
-  public constructor(
-    node: any,
-    minimumDragDistance?: number,
-    extractFromEvent?: ( event: any ) => Vector2,
-    throttleInterval?: number
-  ) {
-    this.node = node;
+  public constructor( config: HandleConfig ) {
+    this.node = config.startNode;
 
-    if ( minimumDragDistance !== undefined ) {
-      this.minimumDragDistance = minimumDragDistance;
+    if ( config.moveNode !== undefined ) {
+      this.moveNode = config.moveNode;
     }
 
-    if ( extractFromEvent ) {
+    if ( config.minimumDragDistance !== undefined ) {
+      this.minimumDragDistance = config.minimumDragDistance;
+    }
+
+    if ( config.extractFromEvent ) {
       // Use a custom supplied extract function.
-      this.extractFromEvent = extractFromEvent;
+      this.extractFromEvent = config.extractFromEvent;
     } else {
       // Use the default extract function.
       this.extractFromEvent = ( event: any ): Vector2 => {
@@ -79,8 +80,8 @@ export class Handle {
       };
     }
 
-    if ( throttleInterval !== undefined ) {
-      this.throttleInterval = throttleInterval;
+    if ( config.throttleInterval !== undefined ) {
+      this.throttleInterval = config.throttleInterval;
     }
 
     this.node.addEventListener( 'mousedown', this.beginDrag, false );
@@ -182,10 +183,10 @@ export class Handle {
           this.clicked();
         }
 
-        document.removeEventListener( 'selectstart', cancelSelect, false );
+        this.moveNode.removeEventListener( 'mousemove', throttledContinue, false );
+        this.moveNode.removeEventListener( 'touchmove', throttledContinue, false );
 
-        document.removeEventListener( 'mousemove', throttledContinue, false );
-        document.removeEventListener( 'touchmove', throttledContinue, false );
+        document.removeEventListener( 'selectstart', cancelSelect, false );
 
         document.removeEventListener( 'mouseup', endDrag, false );
         document.removeEventListener( 'touchend', endDrag, false );
@@ -193,10 +194,13 @@ export class Handle {
         document.removeEventListener( 'touchleave', endDrag, false );
       };
 
-      document.addEventListener( 'selectstart', cancelSelect, false );
+      /* The move and end events are registered on the document node by default. Because during a
+       * drag the mouse can temporarily or permanently leave the node that started the event.
+       * For the move events a custom node can be set instead of the document node. */
+      this.moveNode.addEventListener( 'mousemove', throttledContinue, false );
+      this.moveNode.addEventListener( 'touchmove', throttledContinue, false );
 
-      document.addEventListener( 'mousemove', throttledContinue, false );
-      document.addEventListener( 'touchmove', throttledContinue, false );
+      document.addEventListener( 'selectstart', cancelSelect, false );
 
       document.addEventListener( 'mouseup', endDrag, false );
       document.addEventListener( 'touchend', endDrag, false );

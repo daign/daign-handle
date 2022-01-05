@@ -1,6 +1,7 @@
 import { Vector2 } from '@daign/math';
 
 import { Handle } from './handle';
+import { HandleConfig } from './handleConfig';
 
 /**
  * Class to handle drag and scroll actions on DOM elements.
@@ -38,18 +39,10 @@ export class ScrollHandle extends Handle {
 
   /**
    * Constructor.
-   * @param node - The DOM node that should trigger the start event.
-   * @param minimumDragDistance - Distance in px below which a drag is considered a click. Optional.
-   * @param extractFromEvent - The function to extract coordinates from mouse events. Optional.
-   * @param throttleInterval - Waiting time in milliseconds between throttled move events. Optional.
+   * @param config - The handle config for setting up the handle.
    */
-  public constructor(
-    node: any,
-    minimumDragDistance?: number,
-    extractFromEvent?: ( event: any ) => Vector2,
-    throttleInterval?: number
-  ) {
-    super( node, minimumDragDistance, extractFromEvent, throttleInterval );
+  public constructor( config: HandleConfig ) {
+    super( config );
 
     this.node.addEventListener( 'wheel', this.beginScroll, false );
   }
