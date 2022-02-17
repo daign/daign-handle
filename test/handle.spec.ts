@@ -143,6 +143,8 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( handle.start.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      // Absolute start coordinates should be stored in a private variable.
+      expect( ( handle as any )._absoluteStart.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
     it( 'should not register more events if beginning function returns false', (): void => {
@@ -180,29 +182,6 @@ describe( 'Handle', (): void => {
       // Assert
       expect( spy.callCount ).to.equal( 7 );
       global.document.sendEvent( 'mousemove', event );
-      global.document.sendEvent( 'mouseup', event );
-    } );
-
-    it( 'should register the move events on the move node if passed', (): void => {
-      // Arrange
-      const node = new MockNode();
-      const moveNode = new MockNode();
-      const handle = new Handle( { startNode: node, moveNode } );
-      handle.beginning = (): boolean => {
-        return true;
-      };
-      const spyMoveNode = sinon.spy( moveNode, 'addEventListener' );
-      const spyDocument = sinon.spy( global.document, 'addEventListener' );
-
-      const event = new MockEvent().setClientPoint( 0, 0 );
-
-      // Act
-      node.sendEvent( 'mousedown', event );
-
-      // Assert
-      expect( spyMoveNode.callCount ).to.equal( 2 );
-      expect( spyDocument.callCount ).to.equal( 5 );
-      moveNode.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
     } );
   } );
@@ -358,6 +337,31 @@ describe( 'Handle', (): void => {
       expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
+
+    it( 'should not let delta calculation be influenced by custom extract function', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const extractFromEvent = (): Vector2 => {
+        return new Vector2( 100, 100 );
+      };
+      const handle = new Handle( { startNode: node, extractFromEvent } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 3, 5 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+
+      // Assert
+      // Delta ignores the custom extract function and uses only client coordinates.
+      expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      // Temp has delta applied on the start position that came from the custom extract function.
+      expect( handle.temp.equals( new Vector2( 102, 103 ) ) ).to.be.true;
+      global.document.sendEvent( 'mouseup', dragEvent );
+    } );
   } );
 
   describe( 'endDrag', (): void => {
@@ -490,6 +494,32 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+    } );
+
+    it( 'should not let delta calculation be influenced by custom extract function', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const extractFromEvent = (): Vector2 => {
+        return new Vector2( 100, 100 );
+      };
+      const handle = new Handle( { startNode: node, extractFromEvent } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 0, 0 );
+      const endEvent = new MockEvent().setClientPoint( 3, 5 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+      global.document.sendEvent( 'mouseup', endEvent );
+
+      // Assert
+      // Delta ignores the custom extract function and uses only client coordinates.
+      expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      // Temp has delta applied on the start position that came from the custom extract function.
+      expect( handle.temp.equals( new Vector2( 102, 103 ) ) ).to.be.true;
     } );
 
     it( 'should remove 7 events', (): void => {

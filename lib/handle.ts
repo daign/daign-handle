@@ -10,20 +10,26 @@ export class Handle {
   // The DOM node on which the start event listeners are registered.
   protected node: any;
 
-  // The DOM node on which the move event listeners are registered.
-  private moveNode: any = document;
-
   // Distance in pixels below which a drag is still considered a click.
   private minimumDragDistance: number = 5;
 
-  // The function that is used to extract coordinates from mouse events.
+  // The function that is used to extract the coordinates from mouse events for the start position.
   protected extractFromEvent: ( event: any ) => Vector2;
+
+  /* The function that extracts the coordinates from mouse events relative to the application's
+   * viewport. */
+  private absoluteExtractFromEvent: ( event: any ) => Vector2 = ( event: any ): Vector2 => {
+    return new Vector2().setFromEvent( event );
+  };
 
   // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
   private throttleInterval: number = 40;
 
   // Start position of the drag.
   private _start: Vector2 = new Vector2();
+
+  // Start position of the drag relative to the application's viewport.
+  private _absoluteStart: Vector2 = new Vector2();
 
   // Current position of the drag.
   private _temp: Vector2 = new Vector2();
@@ -62,22 +68,16 @@ export class Handle {
   public constructor( config: HandleConfig ) {
     this.node = config.startNode;
 
-    if ( config.moveNode !== undefined ) {
-      this.moveNode = config.moveNode;
-    }
-
     if ( config.minimumDragDistance !== undefined ) {
       this.minimumDragDistance = config.minimumDragDistance;
     }
 
     if ( config.extractFromEvent ) {
-      // Use a custom supplied extract function.
+      // Use a custom supplied extract function for the start position.
       this.extractFromEvent = config.extractFromEvent;
     } else {
       // Use the default extract function.
-      this.extractFromEvent = ( event: any ): Vector2 => {
-        return new Vector2().setFromEvent( event );
-      };
+      this.extractFromEvent = this.absoluteExtractFromEvent;
     }
 
     if ( config.throttleInterval !== undefined ) {
@@ -138,6 +138,7 @@ export class Handle {
     let dragged = false;
 
     this._start.copy( this.extractFromEvent( startEvent ) );
+    this._absoluteStart.copy( this.absoluteExtractFromEvent( startEvent ) );
 
     // When the beginning function returns false then the drag or click is not continued.
     if ( this.beginning( startEvent ) ) {
@@ -151,8 +152,16 @@ export class Handle {
         moveEvent.preventDefault();
         moveEvent.stopPropagation();
 
-        this._temp.copy( this.extractFromEvent( moveEvent ) );
-        this._delta.copy( this._temp ).sub( this._start );
+        const absoluteTemp = this.absoluteExtractFromEvent( moveEvent );
+
+        /* Delta value is always calculated based upon the absolute coordinates. Because the start
+         * position may be calculated relative to the target object of the mouse event, but during
+         * a drag the target object can change, resulting in incorrect delta values. */
+        this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
+
+        /* The calculated temp value has the same offset like the start position, added with the
+         * absolute delta value. */
+        this._temp.copy( this._start ).add( this._delta );
 
         if ( !dragged ) {
           /* The action is only recognized as a drag after a minimum distance to the start event has
@@ -174,8 +183,9 @@ export class Handle {
         endEvent.preventDefault();
         endEvent.stopPropagation();
 
-        this._temp.copy( this.extractFromEvent( endEvent ) );
-        this._delta.copy( this._temp ).sub( this._start );
+        const absoluteTemp = this.absoluteExtractFromEvent( endEvent );
+        this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
+        this._temp.copy( this._start ).add( this._delta );
 
         if ( dragged ) {
           this.ending();
@@ -183,8 +193,8 @@ export class Handle {
           this.clicked();
         }
 
-        this.moveNode.removeEventListener( 'mousemove', throttledContinue, false );
-        this.moveNode.removeEventListener( 'touchmove', throttledContinue, false );
+        document.removeEventListener( 'mousemove', throttledContinue, false );
+        document.removeEventListener( 'touchmove', throttledContinue, false );
 
         document.removeEventListener( 'selectstart', cancelSelect, false );
 
@@ -195,10 +205,9 @@ export class Handle {
       };
 
       /* The move and end events are registered on the document node by default. Because during a
-       * drag the mouse can temporarily or permanently leave the node that started the event.
-       * For the move events a custom node can be set instead of the document node. */
-      this.moveNode.addEventListener( 'mousemove', throttledContinue, false );
-      this.moveNode.addEventListener( 'touchmove', throttledContinue, false );
+       * drag the mouse can temporarily or permanently leave the node that started the event. */
+      document.addEventListener( 'mousemove', throttledContinue, false );
+      document.addEventListener( 'touchmove', throttledContinue, false );
 
       document.addEventListener( 'selectstart', cancelSelect, false );
 

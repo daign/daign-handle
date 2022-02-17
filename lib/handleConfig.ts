@@ -7,9 +7,6 @@ export interface HandleConfig {
   // The DOM node on which the start event listeners will be registered.
   startNode: any;
 
-  // The DOM node on which the move event listeners will be registered. Optional.
-  moveNode?: any;
-
   // Distance in pixels below which a drag is still considered a click. Optional.
   minimumDragDistance?: number;
 
