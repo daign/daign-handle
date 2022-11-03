@@ -41,7 +41,7 @@ export class MultiTouchHandle {
   private _tempPositions: Vector2[] = [];
 
   // Current differences to start positions.
-  private _deltaDifferences: Vector2[] = [];
+  private _deltaVectors: Vector2[] = [];
 
   // Variable to temporarily disable the handle.
   public enabled: boolean = true;
@@ -84,7 +84,7 @@ export class MultiTouchHandle {
   /**
    * Get the start position of the drag.
    * @param index - The finger index of the multi touch.
-   * @return The start position vector or undefined.
+   * @returns The start position vector or undefined.
    */
   public getStartPosition( index: number ): Vector2 {
     return this._startPositions[ index ];
@@ -93,7 +93,7 @@ export class MultiTouchHandle {
   /**
    * Get the current position of the drag.
    * @param index - The finger index of the multi touch.
-   * @return The temp position vector or undefined.
+   * @returns The temp position vector or undefined.
    */
   public getTempPosition( index: number ): Vector2 {
     return this._tempPositions[ index ];
@@ -102,10 +102,10 @@ export class MultiTouchHandle {
   /**
    * Get the current difference to start position.
    * @param index - The finger index of the multi touch.
-   * @return The delta difference or undefined.
+   * @returns The delta vector or undefined.
    */
-  public getDeltaDifference( index: number ): Vector2 {
-    return this._deltaDifferences[ index ];
+  public getDelta( index: number ): Vector2 {
+    return this._deltaVectors[ index ];
   }
 
   /**
@@ -157,12 +157,12 @@ export class MultiTouchHandle {
           /* Delta value is always calculated based upon the absolute coordinates. Because the start
            * position may be calculated relative to the target object of the mouse event, but during
            * a drag the target object can change, resulting in incorrect delta values. */
-          this._deltaDifferences[ i ].copy( absoluteTemp ).sub( this._absoluteStartPositions[ i ] );
+          this._deltaVectors[ i ].copy( absoluteTemp ).sub( this._absoluteStartPositions[ i ] );
 
           /* The calculated temp value has the same offset like the start position, added with the
            * absolute delta value. */
           this._tempPositions[ i ].copy( this._startPositions[ i ] )
-            .add( this._deltaDifferences[ i ] );
+            .add( this._deltaVectors[ i ] );
         }
       }
     } else {
@@ -170,9 +170,9 @@ export class MultiTouchHandle {
        * position. */
       const absoluteTemp = this.absoluteExtractFromEvent( event );
 
-      this._deltaDifferences[ 0 ].copy( absoluteTemp ).sub( this._absoluteStartPositions[ 0 ] );
+      this._deltaVectors[ 0 ].copy( absoluteTemp ).sub( this._absoluteStartPositions[ 0 ] );
       this._tempPositions[ 0 ].copy( this._startPositions[ 0 ] )
-        .add( this._deltaDifferences[ 0 ] );
+        .add( this._deltaVectors[ 0 ] );
     }
   }
 
@@ -202,7 +202,7 @@ export class MultiTouchHandle {
         const absolutePosition = this.absoluteExtractFromTouchEvent( startEvent, i );
         this._absoluteStartPositions.push( absolutePosition );
 
-        this._deltaDifferences.push( new Vector2() );
+        this._deltaVectors.push( new Vector2() );
         this._tempPositions.push( position.clone() );
       }
     } else {
@@ -214,7 +214,7 @@ export class MultiTouchHandle {
       const absolutePosition = this.absoluteExtractFromEvent( startEvent );
       this._absoluteStartPositions.push( absolutePosition );
 
-      this._deltaDifferences.push( new Vector2() );
+      this._deltaVectors.push( new Vector2() );
       this._tempPositions.push( position.clone() );
     }
 
@@ -235,7 +235,7 @@ export class MultiTouchHandle {
         if ( !dragged ) {
           /* The action is only recognized as a drag after a minimum distance to the start event has
            * been reached. Otherwise the continuing callback is not executed. */
-          if ( this._deltaDifferences.some( ( delta: Vector2 ): boolean =>
+          if ( this._deltaVectors.some( ( delta: Vector2 ): boolean =>
             delta.length() >= this.minimumDragDistance
           ) ) {
             dragged = true;
