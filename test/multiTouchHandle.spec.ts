@@ -170,6 +170,36 @@ describe( 'MultiTouchHandle', (): void => {
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
+    it( 'should not add temp vectors that were not present on the start event', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const startTouch = new MockEvent();
+      startTouch.setClientPoint( 1, 2 );
+      const startEvent = new MockEvent();
+      startEvent.addTouchPoint( startTouch );
+
+      const dragEvent1 = new MockEvent();
+      const dragEvent2 = new MockEvent();
+      dragEvent1.setClientPoint( 3, 4 );
+      dragEvent2.setClientPoint( 5, 6 );
+      const dragEvent = new MockEvent();
+      dragEvent.addTouchPoint( dragEvent1 );
+      dragEvent.addTouchPoint( dragEvent2 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      ( handle as any ).updatePositions( dragEvent );
+
+      // Assert
+      expect( handle.getTempPosition( 0 ).equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( handle.getTempPosition( 1 ) ).to.be.undefined;
+      global.document.sendEvent( 'mouseup', dragEvent );
+    } );
+
     it( 'should set the delta vector from mouse event', (): void => {
       // Arrange
       const node = new MockNode();
@@ -308,7 +338,28 @@ describe( 'MultiTouchHandle', (): void => {
       expect( handle.getStartPosition( 0 ).equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
-    it( 'should set the start vectors to the result of the custom extract function', (): void => {
+    it( 'should set the start vectors from touch event', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node } );
+
+      const startTouch1 = new MockEvent();
+      const startTouch2 = new MockEvent();
+      startTouch1.setClientPoint( 1, 1 );
+      startTouch2.setClientPoint( 4, 5 );
+      const startEvent = new MockEvent();
+      startEvent.addTouchPoint( startTouch1 );
+      startEvent.addTouchPoint( startTouch2 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+
+      // Assert
+      expect( handle.getStartPosition( 0 ).equals( new Vector2( 1, 1 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 1 ).equals( new Vector2( 4, 5 ) ) ).to.be.true;
+    } );
+
+    it( 'should set the start vectors from the custom extract function', (): void => {
       // Arrange
       const node = new MockNode();
       const extractFromEvent = (): Vector2 => {
@@ -324,6 +375,40 @@ describe( 'MultiTouchHandle', (): void => {
       expect( handle.getStartPosition( 0 ).equals( new Vector2( 2, 3 ) ) ).to.be.true;
       // Absolute start coordinates should be stored in a private variable.
       expect( ( handle as any )._absoluteStartPositions[ 0 ].equals( new Vector2( 1, 2 ) ) )
+        .to.be.true;
+    } );
+
+    it( 'should set the start vectors from the custom multi touch extract function', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const extractFromTouchEvent = ( _: any, touchIndex: number ): Vector2 => {
+        if ( touchIndex === 0 ) {
+          return new Vector2( 3, 4 );
+        } else {
+          return new Vector2( 7, 8 );
+        }
+      };
+      const handle = new MultiTouchHandle( { startNode: node, extractFromTouchEvent } );
+
+      const startTouch1 = new MockEvent();
+      const startTouch2 = new MockEvent();
+      startTouch1.setClientPoint( 1, 2 );
+      startTouch2.setClientPoint( 5, 6 );
+      const startEvent = new MockEvent();
+      startEvent.addTouchPoint( startTouch1 );
+      startEvent.addTouchPoint( startTouch2 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+
+      // Assert
+      expect( handle.getStartPosition( 0 ).equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 1 ).equals( new Vector2( 7, 8 ) ) ).to.be.true;
+
+      // Absolute start coordinates should be stored in a private variable.
+      expect( ( handle as any )._absoluteStartPositions[ 0 ].equals( new Vector2( 1, 2 ) ) )
+        .to.be.true;
+      expect( ( handle as any )._absoluteStartPositions[ 1 ].equals( new Vector2( 5, 6 ) ) )
         .to.be.true;
     } );
 
