@@ -1,6 +1,6 @@
 {
   "name": "@daign/handle",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Define drag actions for all DOM elements.",
   "keywords": [
     "draggable",
@@ -43,7 +43,7 @@
     "@daign/mock-dom": "1.0.6"
   },
   "dependencies": {
-    "@daign/math": "^1.0.18",
+    "@daign/math": "^1.0.19",
     "@daign/schedule": "^1.0.2"
   },
   "nyc": {

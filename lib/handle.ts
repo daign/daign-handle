@@ -26,10 +26,10 @@ export class Handle {
   private throttleInterval: number = 40;
 
   // Start position of the drag.
-  private _start: Vector2 = new Vector2();
+  private _start: Vector2 | undefined;
 
   // Start position of the drag relative to the application's viewport.
-  private _absoluteStart: Vector2 = new Vector2();
+  private _absoluteStart: Vector2 | undefined;
 
   // Current position of the drag.
   private _temp: Vector2 = new Vector2();
@@ -43,7 +43,7 @@ export class Handle {
   /**
    * Get the start position of the drag.
    */
-  public get start(): Vector2 {
+  public get start(): Vector2 | undefined {
     return this._start;
   }
 
@@ -107,19 +107,24 @@ export class Handle {
   };
 
   /**
-   * Callback to execute during the drag.
+   * Callback to execute during the drag if a drag was detected.
    */
   public continuing: () => void = () => {};
 
   /**
-   * Callback to execute when the drag has ended.
+   * Callback to execute when the drag has ended if a drag was detected.
    */
   public ending: () => void = () => {};
 
   /**
-   * Callback to execute when mouse was released without a position change.
+   * Callback to execute instead of a drag if the mouse was released without a position change.
    */
   public clicked: () => void = () => {};
+
+  /**
+   * Callback to execute at the mouseup event no matter if a drag was detected or not.
+   */
+  public cleanup: () => void = () => {};
 
   /**
    * Function that begins executing the drag.
@@ -137,8 +142,16 @@ export class Handle {
 
     let dragged = false;
 
-    this._start.copy( this.extractFromEvent( startEvent ) );
-    this._absoluteStart.copy( this.absoluteExtractFromEvent( startEvent ) );
+    try {
+      const startPosition = this.extractFromEvent( startEvent );
+      const absoluteStartPosition = this.absoluteExtractFromEvent( startEvent );
+
+      this._start = startPosition;
+      this._absoluteStart = absoluteStartPosition;
+    } catch {
+      // Cancel action when the start positions could not be obtained.
+      return;
+    }
 
     // When the beginning function returns false then the drag or click is not continued.
     if ( this.beginning( startEvent ) ) {
@@ -152,16 +165,26 @@ export class Handle {
         moveEvent.preventDefault();
         moveEvent.stopPropagation();
 
-        const absoluteTemp = this.absoluteExtractFromEvent( moveEvent );
+        // Cancel the update of the continued drag if the start positions are missing.
+        if ( this._start === undefined || this._absoluteStart === undefined ) {
+          return;
+        }
 
-        /* Delta value is always calculated based upon the absolute coordinates. Because the start
-         * position may be calculated relative to the target object of the mouse event, but during
-         * a drag the target object can change, resulting in incorrect delta values. */
-        this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
+        try {
+          const absoluteTemp = this.absoluteExtractFromEvent( moveEvent );
 
-        /* The calculated temp value has the same offset like the start position, added with the
-         * absolute delta value. */
-        this._temp.copy( this._start ).add( this._delta );
+          /* Delta value is always calculated based upon the absolute coordinates. Because the start
+           * position may be calculated relative to the target object of the mouse event, but during
+           * a drag the target object can change, resulting in incorrect delta values. */
+          this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
+
+          /* The calculated temp value has the same offset like the start position, added with the
+           * absolute delta value. */
+          this._temp.copy( this._start ).add( this._delta );
+        } catch {
+          // Cancel the update of the continued drag if the current position could not be obtained.
+          return;
+        }
 
         if ( !dragged ) {
           /* The action is only recognized as a drag after a minimum distance to the start event has
@@ -173,6 +196,7 @@ export class Handle {
           }
         }
 
+        // Call the drag handling callback added by the user of the class.
         this.continuing();
       };
 
@@ -183,16 +207,23 @@ export class Handle {
         endEvent.preventDefault();
         endEvent.stopPropagation();
 
-        const absoluteTemp = this.absoluteExtractFromEvent( endEvent );
-        this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
-        this._temp.copy( this._start ).add( this._delta );
+        // Only execute drag end if the start positions are not missing.
+        if ( this._start !== undefined && this._absoluteStart !== undefined ) {
+          try {
+            const absoluteTemp = this.absoluteExtractFromEvent( endEvent );
+            this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
+            this._temp.copy( this._start ).add( this._delta );
 
-        if ( dragged ) {
-          this.ending();
-        } else {
-          this.clicked();
+            // Depending on whether a drag was detected the ending or clicked callback is called.
+            if ( dragged ) {
+              this.ending();
+            } else {
+              this.clicked();
+            }
+          } catch {}
         }
 
+        // Remove event listeners.
         document.removeEventListener( 'mousemove', throttledContinue, false );
         document.removeEventListener( 'touchmove', throttledContinue, false );
 
@@ -202,6 +233,9 @@ export class Handle {
         document.removeEventListener( 'touchend', endDrag, false );
         document.removeEventListener( 'touchcancel', endDrag, false );
         document.removeEventListener( 'touchleave', endDrag, false );
+
+        // Custom cleanup actions callback.
+        this.cleanup();
       };
 
       /* The move and end events are registered on the document node by default. Because during a

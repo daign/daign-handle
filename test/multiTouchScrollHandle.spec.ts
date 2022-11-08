@@ -85,6 +85,21 @@ describe( 'MultiTouchScrollHandle', (): void => {
       expect( spy.calledOnce ).to.be.false;
     } );
 
+    it( 'should not call the scrolling function if the event is missing scroll info', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchScrollHandle( { startNode: node } );
+      const spy = sinon.spy( handle, 'scrolling' );
+
+      const event = new MockEvent().setClientPoint( 3, 4 );
+
+      // Act
+      node.sendEvent( 'wheel', event );
+
+      // Assert
+      expect( spy.calledOnce ).to.be.false;
+    } );
+
     it( 'should set the scroll and scrollPosition vectors', (): void => {
       // Arrange
       const node = new MockNode();

@@ -76,12 +76,14 @@ export class ScrollHandle extends Handle {
     scrollEvent.preventDefault();
     scrollEvent.stopPropagation();
 
-    this._scroll.setFromScrollEvent( scrollEvent );
-    this._scrollMode = scrollEvent.deltaMode;
-    // Mouse position is extracted with an exchangeable function.
-    this._scrollPosition.copy( this.extractFromEvent( scrollEvent ) );
+    try {
+      this._scroll.setFromScrollEvent( scrollEvent );
+      this._scrollMode = scrollEvent.deltaMode;
+      // Mouse position is extracted with an exchangeable function.
+      this._scrollPosition.copy( this.extractFromEvent( scrollEvent ) );
 
-    this.scrolling();
+      this.scrolling();
+    } catch {}
 
     // Some browsers require to return false to prevent the default scroll action.
     return false;

@@ -116,6 +116,21 @@ describe( 'Handle', (): void => {
       expect( spy.calledOnce ).to.be.false;
     } );
 
+    it( 'should not call the beginning function if the event has no position info', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( { startNode: node } );
+      const spy = sinon.spy( handle, 'beginning' );
+
+      const event = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', event );
+
+      // Assert
+      expect( spy.calledOnce ).to.be.false;
+    } );
+
     it( 'should set the start vector', (): void => {
       // Arrange
       const node = new MockNode();
@@ -126,7 +141,7 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( handle.start.equals( new Vector2( 1, 2 ) ) ).to.be.true;
+      expect( handle.start!.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
     it( 'should set the start vector to the result of the custom extract function', (): void => {
@@ -142,7 +157,7 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( handle.start.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.start!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       // Absolute start coordinates should be stored in a private variable.
       expect( ( handle as any )._absoluteStart.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
@@ -260,6 +275,49 @@ describe( 'Handle', (): void => {
       }
     );
 
+    it( 'should not call the continuing function when start positions are missing', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( { startNode: node, minimumDragDistance: 50 } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const spy = sinon.spy( handle, 'continuing' );
+
+      const startEvent = new MockEvent().setClientPoint( 0, 0 );
+      const dragEvent = new MockEvent().setClientPoint( 1, 100 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      ( handle as any )._start = undefined;
+      global.document.sendEvent( 'mousemove', dragEvent );
+
+      // Assert
+      expect( spy.notCalled ).to.be.true;
+      global.document.sendEvent( 'mouseup', dragEvent );
+    } );
+
+    it( 'should not call the continuing function if current position is missing', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( { startNode: node, minimumDragDistance: 50 } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const spy = sinon.spy( handle, 'continuing' );
+
+      const startEvent = new MockEvent().setClientPoint( 0, 0 );
+      const dragEvent = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+
+      // Assert
+      expect( spy.notCalled ).to.be.true;
+      global.document.sendEvent( 'mouseup', dragEvent );
+    } );
+
     it( 'should skip event execution according to throttle interval',
       async (): Promise<void> => {
         // Arrange
@@ -365,7 +423,7 @@ describe( 'Handle', (): void => {
   } );
 
   describe( 'endDrag', (): void => {
-    it( 'should call the ending function if there was a drag', (): void => {
+    it( 'should call the ending and cleanup functions if there was a drag', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
@@ -374,6 +432,7 @@ describe( 'Handle', (): void => {
       };
       const spyClicked = sinon.spy( handle, 'clicked' );
       const spyEnding = sinon.spy( handle, 'ending' );
+      const spyCleanup = sinon.spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 5 );
@@ -385,10 +444,11 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( spyEnding.calledOnce ).to.be.true;
+      expect( spyCleanup.calledOnce ).to.be.true;
       expect( spyClicked.notCalled ).to.be.true;
     } );
 
-    it( 'should call the clicked function if there was no mousemove event', (): void => {
+    it( 'should call the clicked and cleanup functions if there was no move event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
@@ -397,6 +457,7 @@ describe( 'Handle', (): void => {
       };
       const spyClicked = sinon.spy( handle, 'clicked' );
       const spyEnding = sinon.spy( handle, 'ending' );
+      const spyCleanup = sinon.spy( handle, 'cleanup' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -406,10 +467,11 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( spyClicked.calledOnce ).to.be.true;
+      expect( spyCleanup.calledOnce ).to.be.true;
       expect( spyEnding.notCalled ).to.be.true;
     } );
 
-    it( 'should call the clicked function if the movement was below limit', (): void => {
+    it( 'should call the clicked and cleanup functions if the move was below limit', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node, minimumDragDistance: 5 } );
@@ -418,6 +480,7 @@ describe( 'Handle', (): void => {
       };
       const spyClicked = sinon.spy( handle, 'clicked' );
       const spyEnding = sinon.spy( handle, 'ending' );
+      const spyCleanup = sinon.spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 2 );
@@ -429,6 +492,7 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( spyClicked.calledOnce ).to.be.true;
+      expect( spyCleanup.calledOnce ).to.be.true;
       expect( spyEnding.notCalled ).to.be.true;
     } );
 
@@ -441,6 +505,7 @@ describe( 'Handle', (): void => {
       };
       const spyClicked = sinon.spy( handle, 'clicked' );
       const spyEnding = sinon.spy( handle, 'ending' );
+      const spyCleanup = sinon.spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 2 );
@@ -453,7 +518,34 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( spyClicked.calledOnce ).to.be.true;
+      expect( spyCleanup.calledOnce ).to.be.true;
       expect( spyEnding.notCalled ).to.be.true;
+    } );
+
+    it( 'should call only the cleanup functions if the end event has no coordinates', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( { startNode: node } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const spyClicked = sinon.spy( handle, 'clicked' );
+      const spyEnding = sinon.spy( handle, 'ending' );
+      const spyCleanup = sinon.spy( handle, 'cleanup' );
+
+      const startEvent = new MockEvent().setClientPoint( 0, 0 );
+      const dragEvent = new MockEvent().setClientPoint( 1, 5 );
+      const endEvent = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+      global.document.sendEvent( 'mouseup', endEvent );
+
+      // Assert
+      expect( spyCleanup.calledOnce ).to.be.true;
+      expect( spyEnding.notCalled ).to.be.true;
+      expect( spyClicked.notCalled ).to.be.true;
     } );
 
     it( 'should set the temp vector', (): void => {
@@ -540,6 +632,32 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( spy.callCount ).to.equal( 7 );
+    } );
+
+    it( 'should remove 7 events even if ending and clicked functions are not called', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( { startNode: node } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const removeSpy = sinon.spy( global.document, 'removeEventListener' );
+      const spyClicked = sinon.spy( handle, 'clicked' );
+      const spyEnding = sinon.spy( handle, 'ending' );
+
+      const startEvent = new MockEvent().setClientPoint( 0, 0 );
+      const dragEvent = new MockEvent().setClientPoint( 1, 5 );
+      const endEvent = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+      global.document.sendEvent( 'mouseup', endEvent );
+
+      // Assert
+      expect( removeSpy.callCount ).to.equal( 7 );
+      expect( spyEnding.notCalled ).to.be.true;
+      expect( spyClicked.notCalled ).to.be.true;
     } );
   } );
 
