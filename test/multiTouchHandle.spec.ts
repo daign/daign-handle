@@ -50,7 +50,7 @@ describe( 'MultiTouchHandle', (): void => {
       const result = handle.getStartPosition( 1 );
 
       // Assert
-      expect( result.equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( result!.equals( new Vector2( 3, 4 ) ) ).to.be.true;
     } );
   } );
 
@@ -66,7 +66,7 @@ describe( 'MultiTouchHandle', (): void => {
       const result = handle.getTempPosition( 1 );
 
       // Assert
-      expect( result.equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( result!.equals( new Vector2( 3, 4 ) ) ).to.be.true;
     } );
   } );
 
@@ -82,7 +82,7 @@ describe( 'MultiTouchHandle', (): void => {
       const result = handle.getDelta( 1 );
 
       // Assert
-      expect( result.equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( result!.equals( new Vector2( 3, 4 ) ) ).to.be.true;
     } );
   } );
 
@@ -118,6 +118,24 @@ describe( 'MultiTouchHandle', (): void => {
   } );
 
   describe( 'updatePositions', (): void => {
+    it( 'should throw error when there are no start positions', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const dragEvent = new MockEvent().setClientPoint( 3, 5 );
+
+      // Act
+      const badFn = (): void => {
+        ( handle as any ).updatePositions( dragEvent );
+      };
+
+      // Assert
+      expect( badFn ).to.throw( 'Missing start positions to calculate drag.' );
+    } );
+
     it( 'should set the temp vector from mouse event', (): void => {
       // Arrange
       const node = new MockNode();
@@ -133,7 +151,7 @@ describe( 'MultiTouchHandle', (): void => {
       ( handle as any ).updatePositions( dragEvent );
 
       // Assert
-      expect( handle.getTempPosition( 0 ).equals( new Vector2( 3, 5 ) ) ).to.be.true;
+      expect( handle.getTempPosition( 0 )!.equals( new Vector2( 3, 5 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -165,8 +183,8 @@ describe( 'MultiTouchHandle', (): void => {
       ( handle as any ).updatePositions( dragEvent );
 
       // Assert
-      expect( handle.getTempPosition( 0 ).equals( new Vector2( 2, 3 ) ) ).to.be.true;
-      expect( handle.getTempPosition( 1 ).equals( new Vector2( 7, 9 ) ) ).to.be.true;
+      expect( handle.getTempPosition( 0 )!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.getTempPosition( 1 )!.equals( new Vector2( 7, 9 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -195,7 +213,7 @@ describe( 'MultiTouchHandle', (): void => {
       ( handle as any ).updatePositions( dragEvent );
 
       // Assert
-      expect( handle.getTempPosition( 0 ).equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( handle.getTempPosition( 0 )!.equals( new Vector2( 3, 4 ) ) ).to.be.true;
       expect( handle.getTempPosition( 1 ) ).to.be.undefined;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
@@ -215,7 +233,7 @@ describe( 'MultiTouchHandle', (): void => {
       ( handle as any ).updatePositions( dragEvent );
 
       // Assert
-      expect( handle.getDelta( 0 ).equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.getDelta( 0 )!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -247,8 +265,8 @@ describe( 'MultiTouchHandle', (): void => {
       ( handle as any ).updatePositions( dragEvent );
 
       // Assert
-      expect( handle.getDelta( 0 ).equals( new Vector2( 1, 2 ) ) ).to.be.true;
-      expect( handle.getDelta( 1 ).equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( handle.getDelta( 0 )!.equals( new Vector2( 1, 2 ) ) ).to.be.true;
+      expect( handle.getDelta( 1 )!.equals( new Vector2( 3, 4 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -271,9 +289,9 @@ describe( 'MultiTouchHandle', (): void => {
 
       // Assert
       // Delta ignores the custom extract function and uses only client coordinates.
-      expect( handle.getDelta( 0 ).equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.getDelta( 0 )!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       // Temp has delta applied on the start position that came from the custom extract function.
-      expect( handle.getTempPosition( 0 ).equals( new Vector2( 102, 103 ) ) ).to.be.true;
+      expect( handle.getTempPosition( 0 )!.equals( new Vector2( 102, 103 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
   } );
@@ -325,6 +343,38 @@ describe( 'MultiTouchHandle', (): void => {
       expect( spy.calledOnce ).to.be.false;
     } );
 
+    it( 'should not call the beginning function if event has no position info', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node } );
+      const spy = sinon.spy( handle, 'beginning' );
+
+      const event = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', event );
+
+      // Assert
+      expect( spy.notCalled ).to.be.true;
+    } );
+
+    it( 'should not call the beginning function if touch event has no position info', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node } );
+      const spy = sinon.spy( handle, 'beginning' );
+
+      const event = new MockEvent().setClientPoint( 0, 0 );
+      const touchEvent = new MockEvent();
+      event.addTouchPoint( touchEvent );
+
+      // Act
+      node.sendEvent( 'mousedown', event );
+
+      // Assert
+      expect( spy.notCalled ).to.be.true;
+    } );
+
     it( 'should set the start vectors', (): void => {
       // Arrange
       const node = new MockNode();
@@ -335,7 +385,7 @@ describe( 'MultiTouchHandle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( handle.getStartPosition( 0 ).equals( new Vector2( 1, 2 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 0 )!.equals( new Vector2( 1, 2 ) ) ).to.be.true;
     } );
 
     it( 'should set the start vectors from touch event', (): void => {
@@ -355,8 +405,8 @@ describe( 'MultiTouchHandle', (): void => {
       node.sendEvent( 'mousedown', startEvent );
 
       // Assert
-      expect( handle.getStartPosition( 0 ).equals( new Vector2( 1, 1 ) ) ).to.be.true;
-      expect( handle.getStartPosition( 1 ).equals( new Vector2( 4, 5 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 0 )!.equals( new Vector2( 1, 1 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 1 )!.equals( new Vector2( 4, 5 ) ) ).to.be.true;
     } );
 
     it( 'should set the start vectors from the custom extract function', (): void => {
@@ -372,7 +422,7 @@ describe( 'MultiTouchHandle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( handle.getStartPosition( 0 ).equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 0 )!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       // Absolute start coordinates should be stored in a private variable.
       expect( ( handle as any )._absoluteStartPositions[ 0 ].equals( new Vector2( 1, 2 ) ) )
         .to.be.true;
@@ -402,8 +452,8 @@ describe( 'MultiTouchHandle', (): void => {
       node.sendEvent( 'mousedown', startEvent );
 
       // Assert
-      expect( handle.getStartPosition( 0 ).equals( new Vector2( 3, 4 ) ) ).to.be.true;
-      expect( handle.getStartPosition( 1 ).equals( new Vector2( 7, 8 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 0 )!.equals( new Vector2( 3, 4 ) ) ).to.be.true;
+      expect( handle.getStartPosition( 1 )!.equals( new Vector2( 7, 8 ) ) ).to.be.true;
 
       // Absolute start coordinates should be stored in a private variable.
       expect( ( handle as any )._absoluteStartPositions[ 0 ].equals( new Vector2( 1, 2 ) ) )
@@ -524,6 +574,28 @@ describe( 'MultiTouchHandle', (): void => {
         global.document.sendEvent( 'mouseup', dragEvent2 );
       }
     );
+
+    it( 'should not call the continuing function if updatePositions fails', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node, minimumDragDistance: 50 } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const spy = sinon.spy( handle, 'continuing' );
+
+      const startEvent = new MockEvent().setClientPoint( 0, 0 );
+      const dragEvent = new MockEvent().setClientPoint( 1, 100 );
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      ( handle as any )._startPositions = [];
+      global.document.sendEvent( 'mousemove', dragEvent );
+
+      // Assert
+      expect( spy.notCalled ).to.be.true;
+      global.document.sendEvent( 'mouseup', dragEvent );
+    } );
 
     it( 'should skip event execution according to throttle interval',
       async (): Promise<void> => {

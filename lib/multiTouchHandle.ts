@@ -86,7 +86,7 @@ export class MultiTouchHandle {
    * @param index - The finger index of the multi touch.
    * @returns The start position vector or undefined.
    */
-  public getStartPosition( index: number ): Vector2 {
+  public getStartPosition( index: number ): Vector2 | undefined {
     return this._startPositions[ index ];
   }
 
@@ -95,7 +95,7 @@ export class MultiTouchHandle {
    * @param index - The finger index of the multi touch.
    * @returns The temp position vector or undefined.
    */
-  public getTempPosition( index: number ): Vector2 {
+  public getTempPosition( index: number ): Vector2 | undefined {
     return this._tempPositions[ index ];
   }
 
@@ -104,7 +104,7 @@ export class MultiTouchHandle {
    * @param index - The finger index of the multi touch.
    * @returns The delta vector or undefined.
    */
-  public getDelta( index: number ): Vector2 {
+  public getDelta( index: number ): Vector2 | undefined {
     return this._deltaVectors[ index ];
   }
 
@@ -142,10 +142,24 @@ export class MultiTouchHandle {
   public clicked: () => void = () => {};
 
   /**
+   * Callback to execute at the mouseup event no matter if a drag was detected or not.
+   */
+  public cleanup: () => void = () => {};
+
+  /**
    * Update the positions during the drag.
    * @param event - The touch or mouse event.
    */
   private updatePositions( event: any ): void {
+    if (
+      this._startPositions.length === 0 ||
+      this._absoluteStartPositions.length === 0 ||
+      this._tempPositions.length === 0 ||
+      this._deltaVectors.length === 0
+    ) {
+      throw new Error( 'Missing start positions to calculate drag.' );
+    }
+
     if ( event && event.touches && event.touches.length > 0 ) {
       const touchPoints = event.touches.length;
 
@@ -161,8 +175,7 @@ export class MultiTouchHandle {
 
           /* The calculated temp value has the same offset like the start position, added with the
            * absolute delta value. */
-          this._tempPositions[ i ].copy( this._startPositions[ i ] )
-            .add( this._deltaVectors[ i ] );
+          this._tempPositions[ i ].copy( this._startPositions[ i ] ).add( this._deltaVectors[ i ] );
         }
       }
     } else {
@@ -171,8 +184,7 @@ export class MultiTouchHandle {
       const absoluteTemp = this.absoluteExtractFromEvent( event );
 
       this._deltaVectors[ 0 ].copy( absoluteTemp ).sub( this._absoluteStartPositions[ 0 ] );
-      this._tempPositions[ 0 ].copy( this._startPositions[ 0 ] )
-        .add( this._deltaVectors[ 0 ] );
+      this._tempPositions[ 0 ].copy( this._startPositions[ 0 ] ).add( this._deltaVectors[ 0 ] );
     }
   }
 
@@ -195,27 +207,37 @@ export class MultiTouchHandle {
     if ( startEvent && startEvent.touches && startEvent.touches.length > 0 ) {
       const touchPoints = startEvent.touches.length;
 
-      for ( let i = 0; i < touchPoints; i += 1 ) {
-        const position = this.extractFromTouchEvent( startEvent, i );
-        this._startPositions.push( position );
+      try {
+        for ( let i = 0; i < touchPoints; i += 1 ) {
+          const position = this.extractFromTouchEvent( startEvent, i );
+          this._startPositions.push( position );
 
-        const absolutePosition = this.absoluteExtractFromTouchEvent( startEvent, i );
-        this._absoluteStartPositions.push( absolutePosition );
+          const absolutePosition = this.absoluteExtractFromTouchEvent( startEvent, i );
+          this._absoluteStartPositions.push( absolutePosition );
 
-        this._deltaVectors.push( new Vector2() );
-        this._tempPositions.push( position.clone() );
+          this._deltaVectors.push( new Vector2() );
+          this._tempPositions.push( position.clone() );
+        }
+      } catch {
+        // Cancel action when the start positions could not be obtained.
+        return;
       }
     } else {
       /* When there are no touch events use the normal mouse event information to get a single
        * position. */
-      const position = this.extractFromEvent( startEvent );
-      this._startPositions.push( position );
+      try {
+        const position = this.extractFromEvent( startEvent );
+        this._startPositions.push( position );
 
-      const absolutePosition = this.absoluteExtractFromEvent( startEvent );
-      this._absoluteStartPositions.push( absolutePosition );
+        const absolutePosition = this.absoluteExtractFromEvent( startEvent );
+        this._absoluteStartPositions.push( absolutePosition );
 
-      this._deltaVectors.push( new Vector2() );
-      this._tempPositions.push( position.clone() );
+        this._deltaVectors.push( new Vector2() );
+        this._tempPositions.push( position.clone() );
+      } catch {
+        // Cancel action when the start positions could not be obtained.
+        return;
+      }
     }
 
     // When the beginning function returns false then the drag or click is not continued.
@@ -230,7 +252,13 @@ export class MultiTouchHandle {
         moveEvent.preventDefault();
         moveEvent.stopPropagation();
 
-        this.updatePositions( moveEvent );
+        try {
+          // Extract position information from event.
+          this.updatePositions( moveEvent );
+        } catch {
+          // Cancel the update of the continued drag if the current position could not be obtained.
+          return;
+        }
 
         if ( !dragged ) {
           /* The action is only recognized as a drag after a minimum distance to the start event has
@@ -244,6 +272,7 @@ export class MultiTouchHandle {
           }
         }
 
+        // Call the drag handling callback added by the user of the class.
         this.continuing();
       };
 
@@ -254,14 +283,18 @@ export class MultiTouchHandle {
         endEvent.preventDefault();
         endEvent.stopPropagation();
 
-        this.updatePositions( endEvent );
+        try {
+          this.updatePositions( endEvent );
 
-        if ( dragged ) {
-          this.ending();
-        } else {
-          this.clicked();
-        }
+          // Depending on whether a drag was detected the ending or clicked callback is called.
+          if ( dragged ) {
+            this.ending();
+          } else {
+            this.clicked();
+          }
+        } catch {}
 
+        // Remove event listeners.
         document.removeEventListener( 'mousemove', throttledContinue, false );
         document.removeEventListener( 'touchmove', throttledContinue, false );
 
@@ -271,6 +304,9 @@ export class MultiTouchHandle {
         document.removeEventListener( 'touchend', endDrag, false );
         document.removeEventListener( 'touchcancel', endDrag, false );
         document.removeEventListener( 'touchleave', endDrag, false );
+
+        // Custom cleanup actions callback.
+        this.cleanup();
       };
 
       /* The move and end events are registered on the document node by default. Because during a
