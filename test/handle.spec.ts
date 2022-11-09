@@ -199,6 +199,32 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
     } );
+
+    it( 'should clear start positions from previous drags', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new Handle( { startNode: node } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+      const startEvent = new MockEvent().setClientPoint( 1, 2 );
+      const dragEvent = new MockEvent().setClientPoint( 10, 20 );
+      const secondStartEvent = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+      global.document.sendEvent( 'mouseup', dragEvent );
+
+      expect( handle.start!.equals( new Vector2( 1, 2 ) ) ).to.be.true;
+
+      // Second drag, without position information.
+      node.sendEvent( 'mousedown', secondStartEvent );
+
+      // Assert
+      expect( handle.start ).to.be.undefined;
+      expect( ( handle as any )._absoluteStart ).to.be.undefined;
+    } );
   } );
 
   describe( 'continueDrag', (): void => {

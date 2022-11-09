@@ -142,6 +142,10 @@ export class Handle {
 
     let dragged = false;
 
+    // Clear start values from previous drag.
+    this._start = undefined;
+    this._absoluteStart = undefined;
+
     try {
       const startPosition = this.extractFromEvent( startEvent );
       const absoluteStartPosition = this.absoluteExtractFromEvent( startEvent );

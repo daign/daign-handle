@@ -204,6 +204,12 @@ export class MultiTouchHandle {
 
     let dragged = false;
 
+    // Clear values from previous drag.
+    this._startPositions = [];
+    this._absoluteStartPositions = [];
+    this._tempPositions = [];
+    this._deltaVectors = [];
+
     if ( startEvent && startEvent.touches && startEvent.touches.length > 0 ) {
       const touchPoints = startEvent.touches.length;
 

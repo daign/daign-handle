@@ -499,6 +499,38 @@ describe( 'MultiTouchHandle', (): void => {
       global.document.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
     } );
+
+    it( 'should clear positions from previous drag', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const handle = new MultiTouchHandle( { startNode: node } );
+      handle.beginning = (): boolean => {
+        return true;
+      };
+
+      const startEvent = new MockEvent().setClientPoint( 0, 0 );
+      const dragEvent = new MockEvent().setClientPoint( 1, 5 );
+      const secondStartEvent = new MockEvent();
+
+      // Act
+      node.sendEvent( 'mousedown', startEvent );
+      global.document.sendEvent( 'mousemove', dragEvent );
+      global.document.sendEvent( 'mouseup', dragEvent );
+
+      expect( ( handle as any )._startPositions.length ).to.equal( 1 );
+      expect( ( handle as any )._absoluteStartPositions.length ).to.equal( 1 );
+      expect( ( handle as any )._tempPositions.length ).to.equal( 1 );
+      expect( ( handle as any )._deltaVectors.length ).to.equal( 1 );
+
+      // Second drag, without position information.
+      node.sendEvent( 'mousedown', secondStartEvent );
+
+      // Assert
+      expect( ( handle as any )._startPositions.length ).to.equal( 0 );
+      expect( ( handle as any )._absoluteStartPositions.length ).to.equal( 0 );
+      expect( ( handle as any )._tempPositions.length ).to.equal( 0 );
+      expect( ( handle as any )._deltaVectors.length ).to.equal( 0 );
+    } );
   } );
 
   describe( 'continueDrag', (): void => {
