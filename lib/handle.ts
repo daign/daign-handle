@@ -2,6 +2,7 @@ import { Vector2 } from '@daign/math';
 import { Schedule } from '@daign/schedule';
 
 import { HandleConfig } from './handleConfig';
+import { isPassiveSupported } from './isPassiveSupported';
 
 /**
  * Class to handle drag actions on DOM elements.
@@ -25,6 +26,9 @@ export class Handle {
   // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
   private throttleInterval: number = 40;
 
+  // Options to be passed to every event listener registration.
+  private eventListenerOptions: AddEventListenerOptions | boolean;
+
   // Start position of the drag.
   private _start: Vector2 | undefined;
 
@@ -32,10 +36,10 @@ export class Handle {
   private _absoluteStart: Vector2 | undefined;
 
   // Current position of the drag.
-  private _temp: Vector2 = new Vector2();
+  private _temp: Vector2 | undefined;
 
   // Current difference to start position.
-  private _delta: Vector2 = new Vector2();
+  private _delta: Vector2 | undefined;
 
   // Variable to temporarily disable the handle.
   public enabled: boolean = true;
@@ -50,14 +54,14 @@ export class Handle {
   /**
    * Get the current position of the drag.
    */
-  public get temp(): Vector2 {
+  public get temp(): Vector2 | undefined {
     return this._temp;
   }
 
   /**
    * Get the current difference to start position.
    */
-  public get delta(): Vector2 {
+  public get delta(): Vector2 | undefined {
     return this._delta;
   }
 
@@ -84,8 +88,16 @@ export class Handle {
       this.throttleInterval = config.throttleInterval;
     }
 
-    this.node.addEventListener( 'mousedown', this.beginDrag, false );
-    this.node.addEventListener( 'touchstart', this.beginDrag, false );
+    const passiveSupported = isPassiveSupported();
+    if ( passiveSupported ) {
+      const options: AddEventListenerOptions = { passive: false };
+      this.eventListenerOptions = options;
+    } else {
+      this.eventListenerOptions = false;
+    }
+
+    this.node.addEventListener( 'mousedown', this.beginDrag, this.eventListenerOptions );
+    this.node.addEventListener( 'touchstart', this.beginDrag, this.eventListenerOptions );
   }
 
   /**
@@ -109,17 +121,17 @@ export class Handle {
   /**
    * Callback to execute during the drag if a drag was detected.
    */
-  public continuing: () => void = () => {};
+  public continuing: ( event: any ) => void = () => {};
 
   /**
    * Callback to execute when the drag has ended if a drag was detected.
    */
-  public ending: () => void = () => {};
+  public ending: ( event: any ) => void = () => {};
 
   /**
    * Callback to execute instead of a drag if the mouse was released without a position change.
    */
-  public clicked: () => void = () => {};
+  public clicked: ( event: any ) => void = () => {};
 
   /**
    * Callback to execute at the mouseup event no matter if a drag was detected or not.
@@ -142,9 +154,11 @@ export class Handle {
 
     let dragged = false;
 
-    // Clear start values from previous drag.
+    // Clear values from previous drag.
     this._start = undefined;
     this._absoluteStart = undefined;
+    this._temp = undefined;
+    this._delta = undefined;
 
     try {
       const startPosition = this.extractFromEvent( startEvent );
@@ -180,11 +194,11 @@ export class Handle {
           /* Delta value is always calculated based upon the absolute coordinates. Because the start
            * position may be calculated relative to the target object of the mouse event, but during
            * a drag the target object can change, resulting in incorrect delta values. */
-          this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
+          this._delta = absoluteTemp.clone().sub( this._absoluteStart );
 
           /* The calculated temp value has the same offset like the start position, added with the
            * absolute delta value. */
-          this._temp.copy( this._start ).add( this._delta );
+          this._temp = this._start.clone().add( this._delta );
         } catch {
           // Cancel the update of the continued drag if the current position could not be obtained.
           return;
@@ -201,7 +215,7 @@ export class Handle {
         }
 
         // Call the drag handling callback added by the user of the class.
-        this.continuing();
+        this.continuing( moveEvent );
       };
 
       const throttledContinue = Schedule.deferringThrottle( continueDrag, this.throttleInterval,
@@ -213,18 +227,20 @@ export class Handle {
 
         // Only execute drag end if the start positions are not missing.
         if ( this._start !== undefined && this._absoluteStart !== undefined ) {
+          /* You should not rely on the delta and temp vectors having been set in the end event
+           * handler from the end event or from a move event before. */
           try {
             const absoluteTemp = this.absoluteExtractFromEvent( endEvent );
-            this._delta.copy( absoluteTemp ).sub( this._absoluteStart );
-            this._temp.copy( this._start ).add( this._delta );
-
-            // Depending on whether a drag was detected the ending or clicked callback is called.
-            if ( dragged ) {
-              this.ending();
-            } else {
-              this.clicked();
-            }
+            this._delta = absoluteTemp.clone().sub( this._absoluteStart );
+            this._temp = this._start.clone().add( this._delta );
           } catch {}
+
+          // Depending on whether a drag was detected the ending or clicked callback is called.
+          if ( dragged ) {
+            this.ending( endEvent );
+          } else {
+            this.clicked( endEvent );
+          }
         }
 
         // Remove event listeners.
@@ -244,15 +260,15 @@ export class Handle {
 
       /* The move and end events are registered on the document node by default. Because during a
        * drag the mouse can temporarily or permanently leave the node that started the event. */
-      document.addEventListener( 'mousemove', throttledContinue, false );
-      document.addEventListener( 'touchmove', throttledContinue, false );
+      document.addEventListener( 'mousemove', throttledContinue, this.eventListenerOptions );
+      document.addEventListener( 'touchmove', throttledContinue, this.eventListenerOptions );
 
-      document.addEventListener( 'selectstart', cancelSelect, false );
+      document.addEventListener( 'selectstart', cancelSelect, this.eventListenerOptions );
 
-      document.addEventListener( 'mouseup', endDrag, false );
-      document.addEventListener( 'touchend', endDrag, false );
-      document.addEventListener( 'touchcancel', endDrag, false );
-      document.addEventListener( 'touchleave', endDrag, false );
+      document.addEventListener( 'mouseup', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'touchend', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'touchcancel', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'touchleave', endDrag, this.eventListenerOptions );
     }
   };
 }

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import * as sinon from 'sinon';
+import { spy } from 'sinon';
 
 import { Vector2 } from '@daign/math';
 import { MockDocument, MockEvent, MockNode } from '@daign/mock-dom';
@@ -21,20 +21,35 @@ const sleep = ( milliseconds: number ): Promise<void> => {
 describe( 'Handle', (): void => {
   beforeEach( (): void => {
     global.document = new MockDocument();
+    global.window = new MockNode();
   } );
 
   describe( 'constructor', (): void => {
     it( 'should register two event listeners on passed node', (): void => {
       // Arrange
       const node = new MockNode();
-      const spy = sinon.spy( node, 'addEventListener' );
+      const addListenerSpy = spy( node, 'addEventListener' );
 
       // Act
       const handle = new Handle( { startNode: node } );
 
       // Assert
       expect( ( handle as any ).node ).to.equal( node );
-      expect( spy.callCount ).to.equal( 2 );
+      expect( addListenerSpy.callCount ).to.equal( 2 );
+    } );
+
+    it( 'should set eventListenerOptions to false if passive option is not supported', (): void => {
+      // Arrange
+      const node = new MockNode();
+
+      // This causes the test for passive event listener option to fail.
+      global.window = undefined;
+
+      // Act
+      const handle = new Handle( { startNode: node } );
+
+      // Assert
+      expect( ( handle as any ).eventListenerOptions ).to.be.false;
     } );
   } );
 
@@ -42,7 +57,7 @@ describe( 'Handle', (): void => {
     it( 'should remove the event listeners from the node', (): void => {
       // Arrange
       const node = new MockNode();
-      const spy = sinon.spy( node, 'removeEventListener' );
+      const removeListenerSpy = spy( node, 'removeEventListener' );
       const handle = new Handle( { startNode: node } );
 
       // Act
@@ -50,13 +65,13 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( ( handle as any ).node ).to.be.null;
-      expect( spy.callCount ).to.equal( 2 );
+      expect( removeListenerSpy.callCount ).to.equal( 2 );
     } );
 
     it( 'should not fail when called twice on the same handle', (): void => {
       // Arrange
       const node = new MockNode();
-      const spy = sinon.spy( node, 'removeEventListener' );
+      const removeEventSpy = spy( node, 'removeEventListener' );
       const handle = new Handle( { startNode: node } );
 
       // Act
@@ -65,7 +80,7 @@ describe( 'Handle', (): void => {
 
       // Assert
       expect( ( handle as any ).node ).to.be.null;
-      expect( spy.callCount ).to.equal( 2 );
+      expect( removeEventSpy.callCount ).to.equal( 2 );
     } );
   } );
 
@@ -74,7 +89,7 @@ describe( 'Handle', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
-      const spy = sinon.spy( handle, 'beginning' );
+      const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -82,14 +97,14 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.true;
+      expect( beginningSpy.calledOnce ).to.be.true;
     } );
 
     it( 'should call the beginning function on touchstart event', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
-      const spy = sinon.spy( handle, 'beginning' );
+      const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -97,7 +112,7 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'touchstart', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.true;
+      expect( beginningSpy.calledOnce ).to.be.true;
     } );
 
     it( 'should not call the beginning function when the handle is disabled', (): void => {
@@ -105,7 +120,7 @@ describe( 'Handle', (): void => {
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
       handle.enabled = false;
-      const spy = sinon.spy( handle, 'beginning' );
+      const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -113,14 +128,14 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.false;
+      expect( beginningSpy.calledOnce ).to.be.false;
     } );
 
     it( 'should not call the beginning function if the event has no position info', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
-      const spy = sinon.spy( handle, 'beginning' );
+      const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent();
 
@@ -128,7 +143,7 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.false;
+      expect( beginningSpy.calledOnce ).to.be.false;
     } );
 
     it( 'should set the start vector', (): void => {
@@ -169,7 +184,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return false;
       };
-      const spy = sinon.spy( global.document, 'addEventListener' );
+      const addListenerSpy = spy( global.document, 'addEventListener' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -177,7 +192,7 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( spy.notCalled ).to.be.true;
+      expect( addListenerSpy.notCalled ).to.be.true;
     } );
 
     it( 'should register 7 more events if beginning function returns true', (): void => {
@@ -187,7 +202,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spy = sinon.spy( global.document, 'addEventListener' );
+      const addListenerSpy = spy( global.document, 'addEventListener' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -195,12 +210,12 @@ describe( 'Handle', (): void => {
       node.sendEvent( 'mousedown', event );
 
       // Assert
-      expect( spy.callCount ).to.equal( 7 );
+      expect( addListenerSpy.callCount ).to.equal( 7 );
       global.document.sendEvent( 'mousemove', event );
       global.document.sendEvent( 'mouseup', event );
     } );
 
-    it( 'should clear start positions from previous drags', (): void => {
+    it( 'should clear positions from previous drags', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
@@ -224,6 +239,8 @@ describe( 'Handle', (): void => {
       // Assert
       expect( handle.start ).to.be.undefined;
       expect( ( handle as any )._absoluteStart ).to.be.undefined;
+      expect( handle.temp ).to.be.undefined;
+      expect( handle.delta ).to.be.undefined;
     } );
   } );
 
@@ -235,7 +252,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spy = sinon.spy( handle, 'continuing' );
+      const continuingSpy = spy( handle, 'continuing' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 100 );
@@ -245,7 +262,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', dragEvent );
 
       // Assert
-      expect( spy.calledOnce ).to.be.true;
+      expect( continuingSpy.calledOnce ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -256,7 +273,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spy = sinon.spy( handle, 'continuing' );
+      const continuingSpy = spy( handle, 'continuing' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 2 );
@@ -266,7 +283,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', dragEvent );
 
       // Assert
-      expect( spy.notCalled ).to.be.true;
+      expect( continuingSpy.notCalled ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -280,7 +297,7 @@ describe( 'Handle', (): void => {
         handle.beginning = (): boolean => {
           return true;
         };
-        const spy = sinon.spy( handle, 'continuing' );
+        const continuingSpy = spy( handle, 'continuing' );
 
         const startEvent = new MockEvent().setClientPoint( 0, 0 );
         const dragEvent1 = new MockEvent().setClientPoint( 1, 5 );
@@ -296,7 +313,7 @@ describe( 'Handle', (): void => {
         await sleep( 2 );
 
         // Assert
-        expect( spy.callCount ).to.equal( 2 );
+        expect( continuingSpy.callCount ).to.equal( 2 );
         global.document.sendEvent( 'mouseup', dragEvent2 );
       }
     );
@@ -308,7 +325,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spy = sinon.spy( handle, 'continuing' );
+      const continuingSpy = spy( handle, 'continuing' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 100 );
@@ -319,7 +336,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', dragEvent );
 
       // Assert
-      expect( spy.notCalled ).to.be.true;
+      expect( continuingSpy.notCalled ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -330,7 +347,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spy = sinon.spy( handle, 'continuing' );
+      const continuingSpy = spy( handle, 'continuing' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent();
@@ -340,7 +357,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', dragEvent );
 
       // Assert
-      expect( spy.notCalled ).to.be.true;
+      expect( continuingSpy.notCalled ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -354,7 +371,7 @@ describe( 'Handle', (): void => {
         handle.beginning = (): boolean => {
           return true;
         };
-        const spy = sinon.spy( handle, 'continuing' );
+        const continuingSpy = spy( handle, 'continuing' );
 
         const startEvent = new MockEvent().setClientPoint( 0, 0 );
         const dragEvent1 = new MockEvent().setClientPoint( 1, 10 );
@@ -379,7 +396,7 @@ describe( 'Handle', (): void => {
         await sleep( 11 );
 
         // Assert
-        expect( spy.callCount ).to.equal( 3 );
+        expect( continuingSpy.callCount ).to.equal( 3 );
         global.document.sendEvent( 'mouseup', dragEvent5 );
       }
     );
@@ -399,7 +416,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', dragEvent );
 
       // Assert
-      expect( handle.temp.equals( new Vector2( 3, 5 ) ) ).to.be.true;
+      expect( handle.temp!.equals( new Vector2( 3, 5 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -418,7 +435,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mousemove', dragEvent );
 
       // Assert
-      expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.delta!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
 
@@ -441,9 +458,9 @@ describe( 'Handle', (): void => {
 
       // Assert
       // Delta ignores the custom extract function and uses only client coordinates.
-      expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.delta!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       // Temp has delta applied on the start position that came from the custom extract function.
-      expect( handle.temp.equals( new Vector2( 102, 103 ) ) ).to.be.true;
+      expect( handle.temp!.equals( new Vector2( 102, 103 ) ) ).to.be.true;
       global.document.sendEvent( 'mouseup', dragEvent );
     } );
   } );
@@ -456,9 +473,9 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spyClicked = sinon.spy( handle, 'clicked' );
-      const spyEnding = sinon.spy( handle, 'ending' );
-      const spyCleanup = sinon.spy( handle, 'cleanup' );
+      const clickedSpy = spy( handle, 'clicked' );
+      const endingSpy = spy( handle, 'ending' );
+      const cleanupSpy = spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 5 );
@@ -469,9 +486,9 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', dragEvent );
 
       // Assert
-      expect( spyEnding.calledOnce ).to.be.true;
-      expect( spyCleanup.calledOnce ).to.be.true;
-      expect( spyClicked.notCalled ).to.be.true;
+      expect( endingSpy.calledOnce ).to.be.true;
+      expect( cleanupSpy.calledOnce ).to.be.true;
+      expect( clickedSpy.notCalled ).to.be.true;
     } );
 
     it( 'should call the clicked and cleanup functions if there was no move event', (): void => {
@@ -481,9 +498,9 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spyClicked = sinon.spy( handle, 'clicked' );
-      const spyEnding = sinon.spy( handle, 'ending' );
-      const spyCleanup = sinon.spy( handle, 'cleanup' );
+      const clickedSpy = spy( handle, 'clicked' );
+      const endingSpy = spy( handle, 'ending' );
+      const cleanupSpy = spy( handle, 'cleanup' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -492,9 +509,9 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', event );
 
       // Assert
-      expect( spyClicked.calledOnce ).to.be.true;
-      expect( spyCleanup.calledOnce ).to.be.true;
-      expect( spyEnding.notCalled ).to.be.true;
+      expect( clickedSpy.calledOnce ).to.be.true;
+      expect( cleanupSpy.calledOnce ).to.be.true;
+      expect( endingSpy.notCalled ).to.be.true;
     } );
 
     it( 'should call the clicked and cleanup functions if the move was below limit', (): void => {
@@ -504,9 +521,9 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spyClicked = sinon.spy( handle, 'clicked' );
-      const spyEnding = sinon.spy( handle, 'ending' );
-      const spyCleanup = sinon.spy( handle, 'cleanup' );
+      const clickedSpy = spy( handle, 'clicked' );
+      const endingSpy = spy( handle, 'ending' );
+      const cleanupSpy = spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 2 );
@@ -517,9 +534,9 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', dragEvent );
 
       // Assert
-      expect( spyClicked.calledOnce ).to.be.true;
-      expect( spyCleanup.calledOnce ).to.be.true;
-      expect( spyEnding.notCalled ).to.be.true;
+      expect( clickedSpy.calledOnce ).to.be.true;
+      expect( cleanupSpy.calledOnce ).to.be.true;
+      expect( endingSpy.notCalled ).to.be.true;
     } );
 
     it( 'should call the clicked function if only the end move was above limit', (): void => {
@@ -529,9 +546,9 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spyClicked = sinon.spy( handle, 'clicked' );
-      const spyEnding = sinon.spy( handle, 'ending' );
-      const spyCleanup = sinon.spy( handle, 'cleanup' );
+      const clickedSpy = spy( handle, 'clicked' );
+      const endingSpy = spy( handle, 'ending' );
+      const cleanupSpy = spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 2 );
@@ -543,21 +560,21 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', endEvent );
 
       // Assert
-      expect( spyClicked.calledOnce ).to.be.true;
-      expect( spyCleanup.calledOnce ).to.be.true;
-      expect( spyEnding.notCalled ).to.be.true;
+      expect( clickedSpy.calledOnce ).to.be.true;
+      expect( cleanupSpy.calledOnce ).to.be.true;
+      expect( endingSpy.notCalled ).to.be.true;
     } );
 
-    it( 'should call only the cleanup functions if the end event has no coordinates', (): void => {
+    it( 'should call the ending callback even if the end event has no coordinates', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
       handle.beginning = (): boolean => {
         return true;
       };
-      const spyClicked = sinon.spy( handle, 'clicked' );
-      const spyEnding = sinon.spy( handle, 'ending' );
-      const spyCleanup = sinon.spy( handle, 'cleanup' );
+      const clickedSpy = spy( handle, 'clicked' );
+      const endingSpy = spy( handle, 'ending' );
+      const cleanupSpy = spy( handle, 'cleanup' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 5 );
@@ -569,9 +586,9 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', endEvent );
 
       // Assert
-      expect( spyCleanup.calledOnce ).to.be.true;
-      expect( spyEnding.notCalled ).to.be.true;
-      expect( spyClicked.notCalled ).to.be.true;
+      expect( endingSpy.calledOnce ).to.be.true;
+      expect( cleanupSpy.calledOnce ).to.be.true;
+      expect( clickedSpy.notCalled ).to.be.true;
     } );
 
     it( 'should set the temp vector', (): void => {
@@ -591,7 +608,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', endEvent );
 
       // Assert
-      expect( handle.temp.equals( new Vector2( 3, 5 ) ) ).to.be.true;
+      expect( handle.temp!.equals( new Vector2( 3, 5 ) ) ).to.be.true;
     } );
 
     it( 'should set the delta vector', (): void => {
@@ -611,7 +628,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', endEvent );
 
       // Assert
-      expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.delta!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
     } );
 
     it( 'should not let delta calculation be influenced by custom extract function', (): void => {
@@ -635,9 +652,9 @@ describe( 'Handle', (): void => {
 
       // Assert
       // Delta ignores the custom extract function and uses only client coordinates.
-      expect( handle.delta.equals( new Vector2( 2, 3 ) ) ).to.be.true;
+      expect( handle.delta!.equals( new Vector2( 2, 3 ) ) ).to.be.true;
       // Temp has delta applied on the start position that came from the custom extract function.
-      expect( handle.temp.equals( new Vector2( 102, 103 ) ) ).to.be.true;
+      expect( handle.temp!.equals( new Vector2( 102, 103 ) ) ).to.be.true;
     } );
 
     it( 'should remove 7 events', (): void => {
@@ -647,7 +664,7 @@ describe( 'Handle', (): void => {
       handle.beginning = (): boolean => {
         return true;
       };
-      const spy = sinon.spy( global.document, 'removeEventListener' );
+      const removeListenerSpy = spy( global.document, 'removeEventListener' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
 
@@ -657,19 +674,17 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', event );
 
       // Assert
-      expect( spy.callCount ).to.equal( 7 );
+      expect( removeListenerSpy.callCount ).to.equal( 7 );
     } );
 
-    it( 'should remove 7 events even if ending and clicked functions are not called', (): void => {
+    it( 'should remove 7 events even if the end event is missing position info', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new Handle( { startNode: node } );
       handle.beginning = (): boolean => {
         return true;
       };
-      const removeSpy = sinon.spy( global.document, 'removeEventListener' );
-      const spyClicked = sinon.spy( handle, 'clicked' );
-      const spyEnding = sinon.spy( handle, 'ending' );
+      const removeListenerSpy = spy( global.document, 'removeEventListener' );
 
       const startEvent = new MockEvent().setClientPoint( 0, 0 );
       const dragEvent = new MockEvent().setClientPoint( 1, 5 );
@@ -681,9 +696,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', endEvent );
 
       // Assert
-      expect( removeSpy.callCount ).to.equal( 7 );
-      expect( spyEnding.notCalled ).to.be.true;
-      expect( spyClicked.notCalled ).to.be.true;
+      expect( removeListenerSpy.callCount ).to.equal( 7 );
     } );
   } );
 
@@ -698,7 +711,7 @@ describe( 'Handle', (): void => {
 
       const event = new MockEvent().setClientPoint( 0, 0 );
       const selectEvent = new MockEvent().setClientPoint( 1, 1 );
-      const spy = sinon.spy( selectEvent, 'preventDefault' );
+      const preventDefaultSpy = spy( selectEvent, 'preventDefault' );
 
       // Act
       node.sendEvent( 'mousedown', event );
@@ -706,7 +719,7 @@ describe( 'Handle', (): void => {
       global.document.sendEvent( 'mouseup', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.true;
+      expect( preventDefaultSpy.calledOnce ).to.be.true;
     } );
   } );
 } );

@@ -1,24 +1,30 @@
 import { expect } from 'chai';
-import * as sinon from 'sinon';
+import { spy } from 'sinon';
 
 import { Vector2 } from '@daign/math';
 import { MockEvent, MockNode } from '@daign/mock-dom';
 
 import { MultiTouchScrollHandle } from '../lib';
 
+declare var global: any;
+
 describe( 'MultiTouchScrollHandle', (): void => {
+  beforeEach( (): void => {
+    global.window = new MockNode();
+  } );
+
   describe( 'constructor', (): void => {
     it( 'should register three event listeners on passed node', (): void => {
       // Arrange
       const node = new MockNode();
-      const spy = sinon.spy( node, 'addEventListener' );
+      const addListenerSpy = spy( node, 'addEventListener' );
 
       // Act
       const handle = new MultiTouchScrollHandle( { startNode: node } );
 
       // Assert
       expect( ( handle as any ).node ).to.equal( node );
-      expect( spy.callCount ).to.equal( 3 );
+      expect( addListenerSpy.callCount ).to.equal( 3 );
     } );
   } );
 
@@ -26,7 +32,7 @@ describe( 'MultiTouchScrollHandle', (): void => {
     it( 'should remove the event listeners from the node', (): void => {
       // Arrange
       const node = new MockNode();
-      const spy = sinon.spy( node, 'removeEventListener' );
+      const removeListenerSpy = spy( node, 'removeEventListener' );
       const handle = new MultiTouchScrollHandle( { startNode: node } );
 
       // Act
@@ -34,13 +40,13 @@ describe( 'MultiTouchScrollHandle', (): void => {
 
       // Assert
       expect( ( handle as any ).node ).to.be.null;
-      expect( spy.callCount ).to.equal( 3 );
+      expect( removeListenerSpy.callCount ).to.equal( 3 );
     } );
 
     it( 'should not fail when called twice on the same handle', (): void => {
       // Arrange
       const node = new MockNode();
-      const spy = sinon.spy( node, 'removeEventListener' );
+      const removeListenerSpy = spy( node, 'removeEventListener' );
       const handle = new MultiTouchScrollHandle( { startNode: node } );
 
       // Act
@@ -49,7 +55,7 @@ describe( 'MultiTouchScrollHandle', (): void => {
 
       // Assert
       expect( ( handle as any ).node ).to.be.null;
-      expect( spy.callCount ).to.equal( 3 );
+      expect( removeListenerSpy.callCount ).to.equal( 3 );
     } );
   } );
 
@@ -58,7 +64,7 @@ describe( 'MultiTouchScrollHandle', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new MultiTouchScrollHandle( { startNode: node } );
-      const spy = sinon.spy( handle, 'scrolling' );
+      const scrollingSpy = spy( handle, 'scrolling' );
 
       const event = new MockEvent().setScrollDelta( 1, 2 ).setClientPoint( 3, 4 );
 
@@ -66,7 +72,7 @@ describe( 'MultiTouchScrollHandle', (): void => {
       node.sendEvent( 'wheel', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.true;
+      expect( scrollingSpy.calledOnce ).to.be.true;
     } );
 
     it( 'should not call the scrolling function when the handle is disabled', (): void => {
@@ -74,7 +80,7 @@ describe( 'MultiTouchScrollHandle', (): void => {
       const node = new MockNode();
       const handle = new MultiTouchScrollHandle( { startNode: node } );
       handle.enabled = false;
-      const spy = sinon.spy( handle, 'scrolling' );
+      const scrollingSpy = spy( handle, 'scrolling' );
 
       const event = new MockEvent().setScrollDelta( 1, 2 ).setClientPoint( 3, 4 );
 
@@ -82,14 +88,14 @@ describe( 'MultiTouchScrollHandle', (): void => {
       node.sendEvent( 'wheel', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.false;
+      expect( scrollingSpy.calledOnce ).to.be.false;
     } );
 
     it( 'should not call the scrolling function if the event is missing scroll info', (): void => {
       // Arrange
       const node = new MockNode();
       const handle = new MultiTouchScrollHandle( { startNode: node } );
-      const spy = sinon.spy( handle, 'scrolling' );
+      const scrollingSpy = spy( handle, 'scrolling' );
 
       const event = new MockEvent().setClientPoint( 3, 4 );
 
@@ -97,7 +103,7 @@ describe( 'MultiTouchScrollHandle', (): void => {
       node.sendEvent( 'wheel', event );
 
       // Assert
-      expect( spy.calledOnce ).to.be.false;
+      expect( scrollingSpy.calledOnce ).to.be.false;
     } );
 
     it( 'should set the scroll and scrollPosition vectors', (): void => {

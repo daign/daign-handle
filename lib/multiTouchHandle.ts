@@ -2,6 +2,7 @@ import { Vector2 } from '@daign/math';
 import { Schedule } from '@daign/schedule';
 
 import { HandleConfig } from './handleConfig';
+import { isPassiveSupported } from './isPassiveSupported';
 
 /**
  * Class to handle multi touch drag actions on DOM elements.
@@ -30,6 +31,9 @@ export class MultiTouchHandle {
 
   // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
   private throttleInterval: number = 40;
+
+  // Options to be passed to every event listener registration.
+  private eventListenerOptions: AddEventListenerOptions | boolean;
 
   // Start positions of the multi touch drag.
   private _startPositions: Vector2[] = [];
@@ -77,8 +81,16 @@ export class MultiTouchHandle {
       this.throttleInterval = config.throttleInterval;
     }
 
-    this.node.addEventListener( 'mousedown', this.beginDrag, false );
-    this.node.addEventListener( 'touchstart', this.beginDrag, false );
+    const passiveSupported = isPassiveSupported();
+    if ( passiveSupported ) {
+      const options: AddEventListenerOptions = { passive: false };
+      this.eventListenerOptions = options;
+    } else {
+      this.eventListenerOptions = false;
+    }
+
+    this.node.addEventListener( 'mousedown', this.beginDrag, this.eventListenerOptions );
+    this.node.addEventListener( 'touchstart', this.beginDrag, this.eventListenerOptions );
   }
 
   /**
@@ -129,17 +141,17 @@ export class MultiTouchHandle {
   /**
    * Callback to execute during the drag.
    */
-  public continuing: () => void = () => {};
+  public continuing: ( event: any ) => void = () => {};
 
   /**
    * Callback to execute when the drag has ended.
    */
-  public ending: () => void = () => {};
+  public ending: ( event: any ) => void = () => {};
 
   /**
    * Callback to execute when mouse was released without a position change.
    */
-  public clicked: () => void = () => {};
+  public clicked: ( event: any ) => void = () => {};
 
   /**
    * Callback to execute at the mouseup event no matter if a drag was detected or not.
@@ -279,7 +291,7 @@ export class MultiTouchHandle {
         }
 
         // Call the drag handling callback added by the user of the class.
-        this.continuing();
+        this.continuing( moveEvent );
       };
 
       const throttledContinue = Schedule.deferringThrottle( continueDrag, this.throttleInterval,
@@ -289,16 +301,18 @@ export class MultiTouchHandle {
         endEvent.preventDefault();
         endEvent.stopPropagation();
 
+        /* You should not rely on the delta and temp vectors having been set in the end event
+         * handler from the end event or from a move event before. */
         try {
           this.updatePositions( endEvent );
-
-          // Depending on whether a drag was detected the ending or clicked callback is called.
-          if ( dragged ) {
-            this.ending();
-          } else {
-            this.clicked();
-          }
         } catch {}
+
+        // Depending on whether a drag was detected the ending or clicked callback is called.
+        if ( dragged ) {
+          this.ending( endEvent );
+        } else {
+          this.clicked( endEvent );
+        }
 
         // Remove event listeners.
         document.removeEventListener( 'mousemove', throttledContinue, false );
@@ -317,15 +331,15 @@ export class MultiTouchHandle {
 
       /* The move and end events are registered on the document node by default. Because during a
        * drag the mouse can temporarily or permanently leave the node that started the event. */
-      document.addEventListener( 'mousemove', throttledContinue, false );
-      document.addEventListener( 'touchmove', throttledContinue, false );
+      document.addEventListener( 'mousemove', throttledContinue, this.eventListenerOptions );
+      document.addEventListener( 'touchmove', throttledContinue, this.eventListenerOptions );
 
-      document.addEventListener( 'selectstart', cancelSelect, false );
+      document.addEventListener( 'selectstart', cancelSelect, this.eventListenerOptions );
 
-      document.addEventListener( 'mouseup', endDrag, false );
-      document.addEventListener( 'touchend', endDrag, false );
-      document.addEventListener( 'touchcancel', endDrag, false );
-      document.addEventListener( 'touchleave', endDrag, false );
+      document.addEventListener( 'mouseup', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'touchend', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'touchcancel', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'touchleave', endDrag, this.eventListenerOptions );
     }
   };
 }
