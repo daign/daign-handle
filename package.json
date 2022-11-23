@@ -1,6 +1,6 @@
 {
   "name": "@daign/handle",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Define drag actions for all DOM elements.",
   "keywords": [
     "draggable",

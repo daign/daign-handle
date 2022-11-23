@@ -44,7 +44,7 @@ export class MultiTouchScrollHandle extends MultiTouchHandle {
   public constructor( config: HandleConfig ) {
     super( config );
 
-    this.node.addEventListener( 'wheel', this.beginScroll, false );
+    this.node.addEventListener( 'wheel', this.beginScroll, this.addEventListenerOptions );
   }
 
   /**

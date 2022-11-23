@@ -27,7 +27,7 @@ export class Handle {
   private throttleInterval: number = 40;
 
   // Options to be passed to every event listener registration.
-  private eventListenerOptions: AddEventListenerOptions | boolean;
+  protected addEventListenerOptions: AddEventListenerOptions | boolean;
 
   // Start position of the drag.
   private _start: Vector2 | undefined;
@@ -91,13 +91,13 @@ export class Handle {
     const passiveSupported = isPassiveSupported();
     if ( passiveSupported ) {
       const options: AddEventListenerOptions = { passive: false };
-      this.eventListenerOptions = options;
+      this.addEventListenerOptions = options;
     } else {
-      this.eventListenerOptions = false;
+      this.addEventListenerOptions = false;
     }
 
-    this.node.addEventListener( 'mousedown', this.beginDrag, this.eventListenerOptions );
-    this.node.addEventListener( 'touchstart', this.beginDrag, this.eventListenerOptions );
+    this.node.addEventListener( 'mousedown', this.beginDrag, this.addEventListenerOptions );
+    this.node.addEventListener( 'touchstart', this.beginDrag, this.addEventListenerOptions );
   }
 
   /**
@@ -260,15 +260,15 @@ export class Handle {
 
       /* The move and end events are registered on the document node by default. Because during a
        * drag the mouse can temporarily or permanently leave the node that started the event. */
-      document.addEventListener( 'mousemove', throttledContinue, this.eventListenerOptions );
-      document.addEventListener( 'touchmove', throttledContinue, this.eventListenerOptions );
+      document.addEventListener( 'mousemove', throttledContinue, this.addEventListenerOptions );
+      document.addEventListener( 'touchmove', throttledContinue, this.addEventListenerOptions );
 
-      document.addEventListener( 'selectstart', cancelSelect, this.eventListenerOptions );
+      document.addEventListener( 'selectstart', cancelSelect, this.addEventListenerOptions );
 
-      document.addEventListener( 'mouseup', endDrag, this.eventListenerOptions );
-      document.addEventListener( 'touchend', endDrag, this.eventListenerOptions );
-      document.addEventListener( 'touchcancel', endDrag, this.eventListenerOptions );
-      document.addEventListener( 'touchleave', endDrag, this.eventListenerOptions );
+      document.addEventListener( 'mouseup', endDrag, this.addEventListenerOptions );
+      document.addEventListener( 'touchend', endDrag, this.addEventListenerOptions );
+      document.addEventListener( 'touchcancel', endDrag, this.addEventListenerOptions );
+      document.addEventListener( 'touchleave', endDrag, this.addEventListenerOptions );
     }
   };
 }

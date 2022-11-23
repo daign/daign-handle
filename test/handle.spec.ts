@@ -38,19 +38,21 @@ describe( 'Handle', (): void => {
       expect( addListenerSpy.callCount ).to.equal( 2 );
     } );
 
-    it( 'should set eventListenerOptions to false if passive option is not supported', (): void => {
-      // Arrange
-      const node = new MockNode();
+    it( 'should set addEventListenerOptions to false if passive option is not supported',
+      (): void => {
+        // Arrange
+        const node = new MockNode();
 
-      // This causes the test for passive event listener option to fail.
-      global.window = undefined;
+        // This causes the test for passive event listener option to fail.
+        global.window = undefined;
 
-      // Act
-      const handle = new Handle( { startNode: node } );
+        // Act
+        const handle = new Handle( { startNode: node } );
 
-      // Assert
-      expect( ( handle as any ).eventListenerOptions ).to.be.false;
-    } );
+        // Assert
+        expect( ( handle as any ).addEventListenerOptions ).to.be.false;
+      }
+    );
   } );
 
   describe( 'destroy', (): void => {
