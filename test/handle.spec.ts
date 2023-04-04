@@ -25,29 +25,14 @@ describe( 'Handle', (): void => {
   } );
 
   describe( 'constructor', (): void => {
-    it( 'should register two event listeners on passed node', (): void => {
-      // Arrange
-      const node = new MockNode();
-      const addListenerSpy = spy( node, 'addEventListener' );
-
-      // Act
-      const handle = new Handle( { startNode: node } );
-
-      // Assert
-      expect( ( handle as any ).node ).to.equal( node );
-      expect( addListenerSpy.callCount ).to.equal( 2 );
-    } );
-
     it( 'should set addEventListenerOptions to false if passive option is not supported',
       (): void => {
         // Arrange
-        const node = new MockNode();
-
         // This causes the test for passive event listener option to fail.
         global.window = undefined;
 
         // Act
-        const handle = new Handle( { startNode: node } );
+        const handle = new Handle();
 
         // Assert
         expect( ( handle as any ).addEventListenerOptions ).to.be.false;
@@ -60,7 +45,8 @@ describe( 'Handle', (): void => {
       // Arrange
       const node = new MockNode();
       const removeListenerSpy = spy( node, 'removeEventListener' );
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
 
       // Act
       handle.destroy();
@@ -74,7 +60,8 @@ describe( 'Handle', (): void => {
       // Arrange
       const node = new MockNode();
       const removeEventSpy = spy( node, 'removeEventListener' );
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
 
       // Act
       handle.destroy();
@@ -86,11 +73,28 @@ describe( 'Handle', (): void => {
     } );
   } );
 
+  describe( 'setStartNode', (): void => {
+    it( 'should register two event listeners on passed node', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const addListenerSpy = spy( node, 'addEventListener' );
+      const handle = new Handle();
+
+      // Act
+      handle.setStartNode( node );
+
+      // Assert
+      expect( ( handle as any ).node ).to.equal( node );
+      expect( addListenerSpy.callCount ).to.equal( 2 );
+    } );
+  } );
+
   describe( 'beginDrag', (): void => {
     it( 'should call the beginning function on mousedown event', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
       const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
@@ -105,7 +109,8 @@ describe( 'Handle', (): void => {
     it( 'should call the beginning function on touchstart event', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
       const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
@@ -120,7 +125,8 @@ describe( 'Handle', (): void => {
     it( 'should not call the beginning function when the handle is disabled', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
       handle.enabled = false;
       const beginningSpy = spy( handle, 'beginning' );
 
@@ -136,7 +142,8 @@ describe( 'Handle', (): void => {
     it( 'should not call the beginning function if the event has no position info', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
       const beginningSpy = spy( handle, 'beginning' );
 
       const event = new MockEvent();
@@ -151,7 +158,8 @@ describe( 'Handle', (): void => {
     it( 'should set the start vector', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
       const event = new MockEvent().setClientPoint( 1, 2 );
 
       // Act
@@ -167,7 +175,9 @@ describe( 'Handle', (): void => {
       const extractFromEvent = (): Vector2 => {
         return new Vector2( 2, 3 );
       };
-      const handle = new Handle( { startNode: node, extractFromEvent } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.extractFromEvent = extractFromEvent;
       const event = new MockEvent().setClientPoint( 1, 2 );
 
       // Act
@@ -182,7 +192,9 @@ describe( 'Handle', (): void => {
     it( 'should not register more events if beginning function returns false', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return false;
       };
@@ -200,7 +212,9 @@ describe( 'Handle', (): void => {
     it( 'should register 7 more events if beginning function returns true', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -220,7 +234,9 @@ describe( 'Handle', (): void => {
     it( 'should clear positions from previous drags', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -250,7 +266,10 @@ describe( 'Handle', (): void => {
     it( 'should call the continuing function on mousemove event', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node, minimumDragDistance: 50 } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.minimumDragDistance = 50;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -271,7 +290,10 @@ describe( 'Handle', (): void => {
     it( 'should not call the continuing function before minimum distance is reached', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node, minimumDragDistance: 5 } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.minimumDragDistance = 5;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -293,9 +315,11 @@ describe( 'Handle', (): void => {
       async (): Promise<void> => {
         // Arrange
         const node = new MockNode();
-        const handle = new Handle( {
-          startNode: node, minimumDragDistance: 5, throttleInterval: 1
-        } );
+        const handle = new Handle();
+        handle.setStartNode( node );
+        handle.minimumDragDistance = 5;
+        handle.throttleInterval = 1;
+
         handle.beginning = (): boolean => {
           return true;
         };
@@ -323,7 +347,10 @@ describe( 'Handle', (): void => {
     it( 'should not call the continuing function when start positions are missing', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node, minimumDragDistance: 50 } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.minimumDragDistance = 50;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -345,7 +372,10 @@ describe( 'Handle', (): void => {
     it( 'should not call the continuing function if current position is missing', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node, minimumDragDistance: 50 } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.minimumDragDistance = 50;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -367,9 +397,11 @@ describe( 'Handle', (): void => {
       async (): Promise<void> => {
         // Arrange
         const node = new MockNode();
-        const handle = new Handle( {
-          startNode: node, minimumDragDistance: 5, throttleInterval: 10
-        } );
+        const handle = new Handle();
+        handle.setStartNode( node );
+        handle.minimumDragDistance = 5;
+        handle.throttleInterval = 10;
+
         handle.beginning = (): boolean => {
           return true;
         };
@@ -406,7 +438,9 @@ describe( 'Handle', (): void => {
     it( 'should set the temp vector', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -425,7 +459,9 @@ describe( 'Handle', (): void => {
     it( 'should set the delta vector', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -447,7 +483,10 @@ describe( 'Handle', (): void => {
       const extractFromEvent = (): Vector2 => {
         return new Vector2( 100, 100 );
       };
-      const handle = new Handle( { startNode: node, extractFromEvent } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.extractFromEvent = extractFromEvent;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -471,7 +510,9 @@ describe( 'Handle', (): void => {
     it( 'should call the ending and cleanup functions if there was a drag', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -496,7 +537,9 @@ describe( 'Handle', (): void => {
     it( 'should call the clicked and cleanup functions if there was no move event', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -519,7 +562,10 @@ describe( 'Handle', (): void => {
     it( 'should call the clicked and cleanup functions if the move was below limit', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node, minimumDragDistance: 5 } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.minimumDragDistance = 5;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -544,7 +590,10 @@ describe( 'Handle', (): void => {
     it( 'should call the clicked function if only the end move was above limit', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node, minimumDragDistance: 50 } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.minimumDragDistance = 50;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -570,7 +619,9 @@ describe( 'Handle', (): void => {
     it( 'should call the ending callback even if the end event has no coordinates', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -596,7 +647,9 @@ describe( 'Handle', (): void => {
     it( 'should set the temp vector', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -616,7 +669,9 @@ describe( 'Handle', (): void => {
     it( 'should set the delta vector', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -639,7 +694,10 @@ describe( 'Handle', (): void => {
       const extractFromEvent = (): Vector2 => {
         return new Vector2( 100, 100 );
       };
-      const handle = new Handle( { startNode: node, extractFromEvent } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+      handle.extractFromEvent = extractFromEvent;
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -662,7 +720,9 @@ describe( 'Handle', (): void => {
     it( 'should remove 7 events', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -682,7 +742,9 @@ describe( 'Handle', (): void => {
     it( 'should remove 7 events even if the end event is missing position info', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };
@@ -706,7 +768,9 @@ describe( 'Handle', (): void => {
     it( 'should call preventDefault on the selectEvent', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new Handle( { startNode: node } );
+      const handle = new Handle();
+      handle.setStartNode( node );
+
       handle.beginning = (): boolean => {
         return true;
       };

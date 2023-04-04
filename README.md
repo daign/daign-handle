@@ -21,7 +21,8 @@ import { Handle } from '@daign/handle';
 const node = document.createElement( 'div' );
 
 // Create the Handle.
-const handle = new Handle( { startNode: node } );
+const handle = new Handle();
+handle.setStartNode( node );
 
 // Callback to execute when drag starts.
 handle.beginning = (): boolean => {

@@ -1,8 +1,13 @@
 import { Vector2 } from '@daign/math';
 import { Schedule } from '@daign/schedule';
 
-import { HandleConfig } from './handleConfig';
 import { isPassiveSupported } from './isPassiveSupported';
+
+/* The function that extracts the coordinates from mouse events relative to the application's
+ * viewport. */
+const absoluteExtractFromEvent = ( event: any ): Vector2 => {
+  return new Vector2().setFromEvent( event );
+};
 
 /**
  * Class to handle drag actions on DOM elements.
@@ -12,19 +17,13 @@ export class Handle {
   protected node: any;
 
   // Distance in pixels below which a drag is still considered a click.
-  private minimumDragDistance: number = 5;
+  public minimumDragDistance: number = 5;
 
   // The function that is used to extract the coordinates from mouse events for the start position.
-  protected extractFromEvent: ( event: any ) => Vector2;
-
-  /* The function that extracts the coordinates from mouse events relative to the application's
-   * viewport. */
-  private absoluteExtractFromEvent: ( event: any ) => Vector2 = ( event: any ): Vector2 => {
-    return new Vector2().setFromEvent( event );
-  };
+  public extractFromEvent: ( event: any ) => Vector2 = absoluteExtractFromEvent;
 
   // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
-  private throttleInterval: number = 40;
+  public throttleInterval: number = 40;
 
   // Options to be passed to every event listener registration.
   protected addEventListenerOptions: AddEventListenerOptions | boolean;
@@ -46,6 +45,7 @@ export class Handle {
 
   /**
    * Get the start position of the drag.
+   * @returns The start position of the drag or undefined.
    */
   public get start(): Vector2 | undefined {
     return this._start;
@@ -53,6 +53,7 @@ export class Handle {
 
   /**
    * Get the current position of the drag.
+   * @returns The current position of the drag or undefined.
    */
   public get temp(): Vector2 | undefined {
     return this._temp;
@@ -60,6 +61,7 @@ export class Handle {
 
   /**
    * Get the current difference to start position.
+   * @returns The current difference to start position or undefined.
    */
   public get delta(): Vector2 | undefined {
     return this._delta;
@@ -67,27 +69,10 @@ export class Handle {
 
   /**
    * Constructor.
-   * @param config - The handle config for setting up the handle.
    */
-  public constructor( config: HandleConfig ) {
-    this.node = config.startNode;
-
-    if ( config.minimumDragDistance !== undefined ) {
-      this.minimumDragDistance = config.minimumDragDistance;
-    }
-
-    if ( config.extractFromEvent ) {
-      // Use a custom supplied extract function for the start position.
-      this.extractFromEvent = config.extractFromEvent;
-    } else {
-      // Use the default extract function.
-      this.extractFromEvent = this.absoluteExtractFromEvent;
-    }
-
-    if ( config.throttleInterval !== undefined ) {
-      this.throttleInterval = config.throttleInterval;
-    }
-
+  public constructor() {
+    /* Add the passive false option to every event listener registration, if supported by the
+     * browser. */
     const passiveSupported = isPassiveSupported();
     if ( passiveSupported ) {
       const options: AddEventListenerOptions = { passive: false };
@@ -95,7 +80,15 @@ export class Handle {
     } else {
       this.addEventListenerOptions = false;
     }
+  }
 
+  /**
+   * Set the DOM node on which the start event listeners will be registered.
+   * @param startNode - The DOM node.
+   */
+  public setStartNode( startNode: any ): void {
+    this.destroy();
+    this.node = startNode;
     this.node.addEventListener( 'mousedown', this.beginDrag, this.addEventListenerOptions );
     this.node.addEventListener( 'touchstart', this.beginDrag, this.addEventListenerOptions );
   }
@@ -162,7 +155,7 @@ export class Handle {
 
     try {
       const startPosition = this.extractFromEvent( startEvent );
-      const absoluteStartPosition = this.absoluteExtractFromEvent( startEvent );
+      const absoluteStartPosition = absoluteExtractFromEvent( startEvent );
 
       this._start = startPosition;
       this._absoluteStart = absoluteStartPosition;
@@ -189,7 +182,7 @@ export class Handle {
         }
 
         try {
-          const absoluteTemp = this.absoluteExtractFromEvent( moveEvent );
+          const absoluteTemp = absoluteExtractFromEvent( moveEvent );
 
           /* Delta value is always calculated based upon the absolute coordinates. Because the start
            * position may be calculated relative to the target object of the mouse event, but during
@@ -230,7 +223,7 @@ export class Handle {
           /* You should not rely on the delta and temp vectors having been set in the end event
            * handler from the end event or from a move event before. */
           try {
-            const absoluteTemp = this.absoluteExtractFromEvent( endEvent );
+            const absoluteTemp = absoluteExtractFromEvent( endEvent );
             this._delta = absoluteTemp.clone().sub( this._absoluteStart );
             this._temp = this._start.clone().add( this._delta );
           } catch {}

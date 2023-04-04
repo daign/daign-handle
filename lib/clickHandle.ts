@@ -1,6 +1,10 @@
 import { Vector2 } from '@daign/math';
 
-import { HandleConfig } from './handleConfig';
+/* The function that extracts the coordinates from mouse events relative to the application's
+ * viewport. */
+const absoluteExtractFromEvent = ( event: any ): Vector2 => {
+  return new Vector2().setFromEvent( event );
+};
 
 /**
  * Class to handle click actions on DOM elements.
@@ -11,13 +15,7 @@ export class ClickHandle {
   protected node: any;
 
   // The function that is used to extract the coordinates from mouse events for the click position.
-  protected extractFromEvent: ( event: any ) => Vector2;
-
-  /* The function that extracts the coordinates from mouse events relative to the application's
-   * viewport. */
-  private absoluteExtractFromEvent: ( event: any ) => Vector2 = ( event: any ): Vector2 => {
-    return new Vector2().setFromEvent( event );
-  };
+  public extractFromEvent: ( event: any ) => Vector2 = absoluteExtractFromEvent;
 
   // Position of the click event.
   private _position: Vector2 | undefined;
@@ -27,6 +25,7 @@ export class ClickHandle {
 
   /**
    * Get the position of the click event.
+   * @returns The position of the click event or undefined.
    */
   public get position(): Vector2 | undefined {
     return this._position;
@@ -34,21 +33,8 @@ export class ClickHandle {
 
   /**
    * Constructor.
-   * @param config - The handle config for setting up the handle.
    */
-  public constructor( config: HandleConfig ) {
-    this.node = config.startNode;
-
-    if ( config.extractFromEvent ) {
-      // Use a custom supplied extract function for the start position.
-      this.extractFromEvent = config.extractFromEvent;
-    } else {
-      // Use the default extract function.
-      this.extractFromEvent = this.absoluteExtractFromEvent;
-    }
-
-    this.node.addEventListener( 'click', this.beginClick, false );
-  }
+  public constructor() {}
 
   /**
    * Remove event listener from node and remove reference to node.
@@ -58,6 +44,16 @@ export class ClickHandle {
       this.node.removeEventListener( 'click', this.beginClick, false );
       this.node = null;
     }
+  }
+
+  /**
+   * Set the DOM node on which the start event listeners will be registered.
+   * @param startNode - The DOM node.
+   */
+  public setStartNode( startNode: any ): void {
+    this.destroy();
+    this.node = startNode;
+    this.node.addEventListener( 'click', this.beginClick, false );
   }
 
   /**

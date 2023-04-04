@@ -20,7 +20,8 @@ describe( 'ClickHandle', (): void => {
       const addListenerSpy = spy( node, 'addEventListener' );
 
       // Act
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
 
       // Assert
       expect( ( handle as any ).node ).to.equal( node );
@@ -33,7 +34,8 @@ describe( 'ClickHandle', (): void => {
       // Arrange
       const node = new MockNode();
       const removeListenerSpy = spy( node, 'removeEventListener' );
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
 
       // Act
       handle.destroy();
@@ -47,7 +49,8 @@ describe( 'ClickHandle', (): void => {
       // Arrange
       const node = new MockNode();
       const removeListenerSpy = spy( node, 'removeEventListener' );
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
 
       // Act
       handle.destroy();
@@ -59,11 +62,28 @@ describe( 'ClickHandle', (): void => {
     } );
   } );
 
+  describe( 'setStartNode', (): void => {
+    it( 'should register one event listeners on passed node', (): void => {
+      // Arrange
+      const node = new MockNode();
+      const addListenerSpy = spy( node, 'addEventListener' );
+      const handle = new ClickHandle();
+
+      // Act
+      handle.setStartNode( node );
+
+      // Assert
+      expect( ( handle as any ).node ).to.equal( node );
+      expect( addListenerSpy.callCount ).to.equal( 1 );
+    } );
+  } );
+
   describe( 'beginClick', (): void => {
     it( 'should call the clicked callback on click event', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
       const clickedSpy = spy( handle, 'clicked' );
 
       const event = new MockEvent().setClientPoint( 0, 0 );
@@ -78,7 +98,8 @@ describe( 'ClickHandle', (): void => {
     it( 'should not call the clicked function when the handle is disabled', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
       handle.enabled = false;
       const clickedSpy = spy( handle, 'clicked' );
 
@@ -94,7 +115,8 @@ describe( 'ClickHandle', (): void => {
     it( 'should call the clicked function even if the event has no position info', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
       const clickedSpy = spy( handle, 'clicked' );
 
       const event = new MockEvent();
@@ -109,7 +131,8 @@ describe( 'ClickHandle', (): void => {
     it( 'should set the position vector', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
       const event = new MockEvent().setClientPoint( 1, 2 );
 
       // Act
@@ -125,7 +148,9 @@ describe( 'ClickHandle', (): void => {
       const extractFromEvent = (): Vector2 => {
         return new Vector2( 2, 3 );
       };
-      const handle = new ClickHandle( { startNode: node, extractFromEvent } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
+      handle.extractFromEvent = extractFromEvent;
       const event = new MockEvent().setClientPoint( 1, 2 );
 
       // Act
@@ -138,7 +163,8 @@ describe( 'ClickHandle', (): void => {
     it( 'should clear positions from previous clicks', (): void => {
       // Arrange
       const node = new MockNode();
-      const handle = new ClickHandle( { startNode: node } );
+      const handle = new ClickHandle();
+      handle.setStartNode( node );
 
       const clickEvent = new MockEvent().setClientPoint( 1, 2 );
       const secondClickEvent = new MockEvent();

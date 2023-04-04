@@ -1,7 +1,6 @@
 import { Vector2 } from '@daign/math';
 
 import { MultiTouchHandle } from './multiTouchHandle';
-import { HandleConfig } from './handleConfig';
 
 /**
  * Class to handle multi touch drag and scroll actions on DOM elements.
@@ -39,12 +38,9 @@ export class MultiTouchScrollHandle extends MultiTouchHandle {
 
   /**
    * Constructor.
-   * @param config - The handle config for setting up the handle.
    */
-  public constructor( config: HandleConfig ) {
-    super( config );
-
-    this.node.addEventListener( 'wheel', this.beginScroll, this.addEventListenerOptions );
+  public constructor() {
+    super();
   }
 
   /**
@@ -55,6 +51,16 @@ export class MultiTouchScrollHandle extends MultiTouchHandle {
       this.node.removeEventListener( 'wheel', this.beginScroll, false );
     }
     super.destroy();
+  }
+
+  /**
+   * Set the DOM node on which the start event listeners will be registered.
+   * @param startNode - The DOM node.
+   */
+  public setStartNode( startNode: any ): void {
+    super.setStartNode( startNode );
+
+    this.node.addEventListener( 'wheel', this.beginScroll, this.addEventListenerOptions );
   }
 
   /**

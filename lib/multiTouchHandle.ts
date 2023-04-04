@@ -1,8 +1,16 @@
 import { Vector2 } from '@daign/math';
 import { Schedule } from '@daign/schedule';
 
-import { HandleConfig } from './handleConfig';
 import { isPassiveSupported } from './isPassiveSupported';
+
+/* The functions that are used to extract the coordinates from mouse events for the start
+ * position. */
+const absoluteExtractFromEvent = ( event: any ): Vector2 => {
+  return new Vector2().setFromEvent( event );
+};
+const absoluteExtractFromTouchEvent = ( event: any, touchIndex: number ): Vector2 => {
+  return new Vector2().setFromTouchEvent( event, touchIndex );
+};
 
 /**
  * Class to handle multi touch drag actions on DOM elements.
@@ -12,25 +20,16 @@ export class MultiTouchHandle {
   protected node: any;
 
   // Distance in pixels below which a drag is still considered a click.
-  private minimumDragDistance: number = 5;
+  public minimumDragDistance: number = 5;
 
   /* The functions that are used to extract the coordinates from mouse events for the start
    * position. */
-  protected extractFromEvent: ( event: any ) => Vector2;
-  protected extractFromTouchEvent: ( event: any, touchIndex: number ) => Vector2;
-
-  /* The functions that extract the coordinates from mouse events relative to the application's
-   * viewport. */
-  private absoluteExtractFromEvent: ( event: any ) => Vector2 = ( event: any ): Vector2 => {
-    return new Vector2().setFromEvent( event );
-  };
-  private absoluteExtractFromTouchEvent: ( event: any, touchIndex: number ) => Vector2 =
-  ( event: any, touchIndex: number ): Vector2 => {
-    return new Vector2().setFromTouchEvent( event, touchIndex );
-  };
+  public extractFromEvent: ( event: any ) => Vector2 = absoluteExtractFromEvent;
+  public extractFromTouchEvent: ( event: any, touchIndex: number ) => Vector2 =
+    absoluteExtractFromTouchEvent;
 
   // Waiting time in milliseconds between throttled move events. 40ms = 25fps.
-  private throttleInterval: number = 40;
+  public throttleInterval: number = 40;
 
   // Options to be passed to every event listener registration.
   protected addEventListenerOptions: AddEventListenerOptions | boolean;
@@ -52,35 +51,8 @@ export class MultiTouchHandle {
 
   /**
    * Constructor.
-   * @param config - The handle config for setting up the handle.
    */
-  public constructor( config: HandleConfig ) {
-    this.node = config.startNode;
-
-    if ( config.minimumDragDistance !== undefined ) {
-      this.minimumDragDistance = config.minimumDragDistance;
-    }
-
-    if ( config.extractFromEvent ) {
-      // Use a custom supplied extract function for the start position.
-      this.extractFromEvent = config.extractFromEvent;
-    } else {
-      // Use the default extract function.
-      this.extractFromEvent = this.absoluteExtractFromEvent;
-    }
-
-    if ( config.extractFromTouchEvent ) {
-      // Use a custom supplied extract function for the start position.
-      this.extractFromTouchEvent = config.extractFromTouchEvent;
-    } else {
-      // Use the default extract function.
-      this.extractFromTouchEvent = this.absoluteExtractFromTouchEvent;
-    }
-
-    if ( config.throttleInterval !== undefined ) {
-      this.throttleInterval = config.throttleInterval;
-    }
-
+  public constructor() {
     const passiveSupported = isPassiveSupported();
     if ( passiveSupported ) {
       const options: AddEventListenerOptions = { passive: false };
@@ -88,9 +60,6 @@ export class MultiTouchHandle {
     } else {
       this.addEventListenerOptions = false;
     }
-
-    this.node.addEventListener( 'mousedown', this.beginDrag, this.addEventListenerOptions );
-    this.node.addEventListener( 'touchstart', this.beginDrag, this.addEventListenerOptions );
   }
 
   /**
@@ -129,6 +98,17 @@ export class MultiTouchHandle {
       this.node.removeEventListener( 'touchstart', this.beginDrag, false );
       this.node = null;
     }
+  }
+
+  /**
+   * Set the DOM node on which the start event listeners will be registered.
+   * @param startNode - The DOM node.
+   */
+  public setStartNode( startNode: any ): void {
+    this.destroy();
+    this.node = startNode;
+    this.node.addEventListener( 'mousedown', this.beginDrag, this.addEventListenerOptions );
+    this.node.addEventListener( 'touchstart', this.beginDrag, this.addEventListenerOptions );
   }
 
   /**
@@ -176,7 +156,7 @@ export class MultiTouchHandle {
       const touchPoints = event.touches.length;
 
       for ( let i = 0; i < touchPoints; i += 1 ) {
-        const absoluteTemp = this.absoluteExtractFromTouchEvent( event, i );
+        const absoluteTemp = absoluteExtractFromTouchEvent( event, i );
 
         // Only calculate for touch points that were already present on the start event.
         if ( i < this._startPositions.length ) {
@@ -193,7 +173,7 @@ export class MultiTouchHandle {
     } else {
       /* When there are no touch events use the normal mouse event information to get a single
        * position. */
-      const absoluteTemp = this.absoluteExtractFromEvent( event );
+      const absoluteTemp = absoluteExtractFromEvent( event );
 
       this._deltaVectors[ 0 ].copy( absoluteTemp ).sub( this._absoluteStartPositions[ 0 ] );
       this._tempPositions[ 0 ].copy( this._startPositions[ 0 ] ).add( this._deltaVectors[ 0 ] );
@@ -230,7 +210,7 @@ export class MultiTouchHandle {
           const position = this.extractFromTouchEvent( startEvent, i );
           this._startPositions.push( position );
 
-          const absolutePosition = this.absoluteExtractFromTouchEvent( startEvent, i );
+          const absolutePosition = absoluteExtractFromTouchEvent( startEvent, i );
           this._absoluteStartPositions.push( absolutePosition );
 
           this._deltaVectors.push( new Vector2() );
@@ -247,7 +227,7 @@ export class MultiTouchHandle {
         const position = this.extractFromEvent( startEvent );
         this._startPositions.push( position );
 
-        const absolutePosition = this.absoluteExtractFromEvent( startEvent );
+        const absolutePosition = absoluteExtractFromEvent( startEvent );
         this._absoluteStartPositions.push( absolutePosition );
 
         this._deltaVectors.push( new Vector2() );
